@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shop — BinAr Fabrics</title>
+  <meta name="description" content="Browse all BinAr Fabrics unstitched and ready-to-wear products. Filter by category, fabric and price.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%230f4c3a'/><text x='50' y='68' font-family='Georgia' font-size='54' text-anchor='middle' fill='%23c9a24a'>B</text></svg>">
+</head>
+<body data-page="shop">
+
+  <section class="page-head">
+    <div class="container">
+      <nav class="breadcrumbs"><a href="index.html">Home</a><span>/</span><span id="crumb">Shop</span></nav>
+      <h1 id="shopTitle">All Products</h1>
+      <p id="shopIntro">Premium unstitched fabrics and ready-to-wear. Use the filters to narrow down by category, fabric and price.</p>
+    </div>
+  </section>
+
+  <section class="section section--tight">
+    <div class="container shop">
+
+      <!-- Filters sidebar -->
+      <aside class="filters" id="filters">
+        <div class="filters__close"><span>Filters</span><button class="icon-btn" id="filtersClose" aria-label="Close filters"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+
+        <details class="filters__group" open>
+          <summary>Category</summary>
+          <div class="filters__list" id="fCat"></div>
+        </details>
+        <details class="filters__group" open>
+          <summary>Fabric</summary>
+          <div class="filters__list" id="fFabric"></div>
+        </details>
+        <details class="filters__group" open>
+          <summary>Collection</summary>
+          <div class="filters__list" id="fCollection"></div>
+        </details>
+        <details class="filters__group" open>
+          <summary>Price</summary>
+          <div class="filters__list" id="fPrice">
+            <label class="check"><input type="radio" name="price" value="" checked> All prices</label>
+            <label class="check"><input type="radio" name="price" value="0-3000"> Under PKR 3,000</label>
+            <label class="check"><input type="radio" name="price" value="3000-6000"> PKR 3,000 – 6,000</label>
+            <label class="check"><input type="radio" name="price" value="6000-10000"> PKR 6,000 – 10,000</label>
+            <label class="check"><input type="radio" name="price" value="10000-999999"> Above PKR 10,000</label>
+          </div>
+        </details>
+        <details class="filters__group" open>
+          <summary>Offers</summary>
+          <div class="filters__list">
+            <label class="check"><input type="checkbox" id="fSale"> On sale</label>
+            <label class="check"><input type="checkbox" id="fNew"> New arrivals</label>
+            <label class="check"><input type="checkbox" id="fWish"> My wishlist</label>
+          </div>
+        </details>
+        <button class="filters__clear" id="clearFilters">Clear all filters</button>
+      </aside>
+
+      <!-- Results -->
+      <div>
+        <div class="shop__toolbar">
+          <div style="display:flex;gap:12px;align-items:center">
+            <button class="btn btn--outline btn--sm filters-toggle" id="filtersOpen">Filters</button>
+            <span class="shop__count" id="count"></span>
+          </div>
+          <label class="select">Sort by
+            <select id="sort">
+              <option value="featured">Featured</option>
+              <option value="popular">Most popular</option>
+              <option value="new">Newest</option>
+              <option value="low">Price: low to high</option>
+              <option value="high">Price: high to low</option>
+            </select>
+          </label>
+        </div>
+        <div class="product-grid" id="grid"></div>
+        <div class="shop__empty" id="empty" hidden>No products match these filters.<br><button class="btn btn--primary btn--sm" id="emptyClear" style="margin-top:16px">Clear filters</button></div>
+      </div>
+    </div>
+  </section>
+
+  <script src="js/products.js"></script>
+  <script>
+    window.binarPage = function ({ PRODUCTS, productCard, catName, getWishlist, $, $$ }) {
+      const params = new URLSearchParams(location.search);
+      const state = {
+        cat: params.get("cat") ? [params.get("cat")] : [],
+        fabric: params.get("fabric") ? [params.get("fabric")] : [],
+        collection: params.get("collection") ? [params.get("collection")] : [],
+        price: "",
+        sale: params.get("badge") === "sale",
+        isNew: params.get("badge") === "new",
+        wish: params.get("wishlist") === "1",
+        sort: params.get("sort") || "featured"
+      };
+
+      // Build checkbox lists from the catalogue
+      const countBy = (key) => PRODUCTS.reduce((m, p) => ((m[p[key]] = (m[p[key]] || 0) + 1), m), {});
+      const buildList = (el, key, selected, labelFn) => {
+        const counts = countBy(key);
+        el.innerHTML = Object.keys(counts).map((v) => `<label class="check"><input type="checkbox" data-key="${key}" value="${v}" ${selected.includes(v) ? "checked" : ""}> ${labelFn ? labelFn(v) : v}<span class="count">${counts[v]}</span></label>`).join("");
+      };
+      buildList($("#fCat"), "category", state.cat, catName);
+      buildList($("#fFabric"), "fabric", state.fabric);
+      buildList($("#fCollection"), "collection", state.collection);
+      $("#fSale").checked = state.sale; $("#fNew").checked = state.isNew; $("#fWish").checked = state.wish;
+      $("#sort").value = state.sort;
+
+      function setHeading() {
+        let title = "All Products", crumb = "Shop", intro = "Premium unstitched fabrics and ready-to-wear. Use the filters to narrow down by category, fabric and price.";
+        if (state.wish) { title = "My Wishlist"; crumb = "Wishlist"; intro = "Products you've saved. Add them to your bag whenever you're ready."; }
+        else if (state.sale) { title = "Sale"; crumb = "Sale"; intro = "Selected fabrics at reduced prices — while stock lasts."; }
+        else if (state.isNew) { title = "New Arrivals"; crumb = "New"; intro = "The latest prints and weaves to land at BinAr."; }
+        else if (state.collection.length === 1 && state.cat.length === 0) { title = state.collection[0]; crumb = title; intro = "A curated collection from BinAr Fabrics."; }
+        else if (state.cat.length === 1) { title = catName(state.cat[0]) + (state.fabric.length === 1 ? " · " + state.fabric[0] : ""); crumb = catName(state.cat[0]); }
+        else if (state.fabric.length === 1) { title = state.fabric[0]; crumb = title; }
+        $("#shopTitle").textContent = title; $("#crumb").textContent = crumb; $("#shopIntro").textContent = intro;
+        document.title = title + " — BinAr Fabrics";
+      }
+
+      function apply() {
+        const wish = getWishlist();
+        let list = PRODUCTS.filter((p) =>
+          (!state.cat.length || state.cat.includes(p.category)) &&
+          (!state.fabric.length || state.fabric.includes(p.fabric)) &&
+          (!state.collection.length || state.collection.includes(p.collection)) &&
+          (!state.sale || p.badge === "sale") &&
+          (!state.isNew || p.badge === "new") &&
+          (!state.wish || wish.includes(p.id))
+        );
+        if (state.price) { const [lo, hi] = state.price.split("-").map(Number); list = list.filter((p) => p.price >= lo && p.price < hi); }
+        const sorters = {
+          popular: (a, b) => b.reviews - a.reviews,
+          new: (a, b) => (b.badge === "new") - (a.badge === "new"),
+          low: (a, b) => a.price - b.price,
+          high: (a, b) => b.price - a.price
+        };
+        if (sorters[state.sort]) list = [...list].sort(sorters[state.sort]);
+
+        $("#grid").innerHTML = list.map(productCard).join("");
+        $("#empty").hidden = list.length > 0;
+        $("#count").textContent = `${list.length} product${list.length === 1 ? "" : "s"}`;
+        setHeading();
+        window.binarReveal();
+      }
+
+      // Events
+      $("#filters").addEventListener("change", (e) => {
+        const i = e.target;
+        if (i.dataset.key) {
+          const map = { category: "cat", fabric: "fabric", collection: "collection" };
+          const arr = state[map[i.dataset.key]];
+          if (i.checked) arr.push(i.value); else arr.splice(arr.indexOf(i.value), 1);
+        } else if (i.name === "price") state.price = i.value;
+        else if (i.id === "fSale") state.sale = i.checked;
+        else if (i.id === "fNew") state.isNew = i.checked;
+        else if (i.id === "fWish") state.wish = i.checked;
+        apply();
+      });
+      $("#sort").addEventListener("change", (e) => { state.sort = e.target.value; apply(); });
+      const clear = () => {
+        Object.assign(state, { cat: [], fabric: [], collection: [], price: "", sale: false, isNew: false, wish: false });
+        $$("#filters input").forEach((i) => { i.checked = i.type === "radio" && i.value === ""; });
+        apply();
+      };
+      $("#clearFilters").addEventListener("click", clear);
+      $("#emptyClear").addEventListener("click", clear);
+      $("#filtersOpen").addEventListener("click", () => $("#filters").classList.add("is-open"));
+      $("#filtersClose").addEventListener("click", () => $("#filters").classList.remove("is-open"));
+
+      apply();
+    };
+  </script>
+  <script src="js/main.js"></script>
+</body>
+</html>
