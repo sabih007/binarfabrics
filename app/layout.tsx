@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Afacad, Montserrat } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-inter", display: "swap" });
-const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"], variable: "--font-playfair", display: "swap" });
+/** Afacad carries the display type (headings, logo, prices); Montserrat the body. */
+const afacad = Afacad({ subsets: ["latin"], weight: ["400", "500", "600", "700"], style: ["normal", "italic"], variable: "--font-afacad", display: "swap" });
+const montserrat = Montserrat({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-montserrat", display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: "BinAr Fabrics — Premium Unstitched Fabrics & Ready to Wear in Pakistan", template: "%s — BinAr Fabrics" },
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
  */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
+    <html lang="en" className={`${afacad.variable} ${montserrat.variable}`}>
       <body>{children}</body>
     </html>
   );
