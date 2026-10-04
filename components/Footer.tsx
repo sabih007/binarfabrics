@@ -1,19 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useStore } from "./StoreProvider";
 import { Logo } from "./Header";
+import { ApiError, apiSend } from "@/lib/client";
 import { ClockIcon, FacebookIcon, InstagramIcon, MailIcon, PhoneIcon, PinIcon, TikTokIcon, WhatsAppFillIcon } from "./Icons";
 
 export default function Footer() {
   const { showToast } = useStore();
+  const [subscribing, setSubscribing] = useState(false);
 
-  const onSubscribe = (e: FormEvent<HTMLFormElement>) => {
+  const onSubscribe = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Hook your newsletter provider (Mailchimp, Klaviyo…) here
-    e.currentTarget.reset();
-    showToast("Thanks for subscribing — welcome to BinAr!");
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    setSubscribing(true);
+
+    try {
+      await apiSend("/api/newsletter", "POST", {
+        email: String(data.get("email") ?? ""),
+        source: "footer",
+        company: String(data.get("company") ?? ""),
+      });
+      form.reset();
+      showToast("Thanks for subscribing — welcome to BinAr!");
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : "Couldn't subscribe. Please try again.");
+    } finally {
+      setSubscribing(false);
+    }
   };
 
   return (
@@ -26,8 +42,10 @@ export default function Footer() {
             <p>Sign up for launches, restocks and members-only discounts. No spam, ever.</p>
           </div>
           <form className="newsletter__form" onSubmit={onSubscribe}>
-            <input type="email" placeholder="Your email address" required aria-label="Email" />
-            <button className="btn" type="submit">Subscribe</button>
+            <input type="email" name="email" placeholder="Your email address" required aria-label="Email" />
+            {/* Honeypot — hidden from people, irresistible to bots. */}
+            <input type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ position: "absolute", left: "-9999px" }} />
+            <button className="btn" type="submit" disabled={subscribing}>{subscribing ? "…" : "Subscribe"}</button>
           </form>
         </div>
       </section>

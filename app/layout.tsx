@@ -1,10 +1,5 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
-import { StoreProvider } from "@/components/StoreProvider";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import CartDrawer, { Toast } from "@/components/CartDrawer";
-import RevealObserver from "@/components/RevealObserver";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-inter", display: "swap" });
@@ -16,19 +11,14 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.svg" },
 };
 
+/**
+ * Document shell only. The storefront chrome (header, footer, cart) lives in
+ * app/(shop)/layout.tsx so the admin area at /admin can render without it.
+ */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
-      <body>
-        <StoreProvider>
-          <Header />
-          <main>{children}</main>
-          <Footer />
-          <CartDrawer />
-          <Toast />
-          <RevealObserver />
-        </StoreProvider>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

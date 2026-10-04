@@ -1,14 +1,18 @@
-import Link from "next/link";
+import { StoreProvider } from "@/components/StoreProvider";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import NotFoundContent from "@/components/NotFoundContent";
 
+/**
+ * Root 404, used for URLs that match no route group at all. It brings its own
+ * chrome because the root layout is just the document shell.
+ */
 export default function NotFound() {
   return (
-    <section className="section">
-      <div className="container text-center" style={{ padding: "80px 0" }}>
-        <span className="eyebrow">404</span>
-        <h1 style={{ fontSize: "clamp(30px, 4vw, 46px)", marginBottom: 12 }}>We couldn&apos;t find that page</h1>
-        <p style={{ color: "var(--ink-3)", marginBottom: 28 }}>The product or page may have moved or is no longer available.</p>
-        <Link className="btn btn--primary" href="/shop">Continue shopping</Link>
-      </div>
-    </section>
+    <StoreProvider>
+      <Header />
+      <main><NotFoundContent /></main>
+      <Footer />
+    </StoreProvider>
   );
 }

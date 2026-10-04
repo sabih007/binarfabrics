@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { PRODUCTS, byId, catName } from "@/lib/products";
+import { FEATURED_COLLECTION, collectionHref, type Product, type ProductPage } from "@/lib/products";
+import { apiGet } from "@/lib/client";
 import { useStore } from "./StoreProvider";
 import { BagIcon, CloseIcon, HeartIcon, MenuIcon, SearchIcon, UserIcon } from "./Icons";
 import ProductCard from "./ProductCard";
@@ -12,6 +13,15 @@ import Swatch from "./Swatch";
 const WOMEN_FABRICS = ["Lawn", "Cotton", "Linen", "Chiffon", "Silk", "Khaddar"];
 const MEN_FABRICS: [string, string][] = [["Wash & Wear", "Wash & Wear"], ["Cotton", "Cotton"], ["Karandi", "Karandi"], ["Silk", "Boski & Silk"]];
 const fabricHref = (cat: string, f: string) => `/shop?cat=${cat}&fabric=${encodeURIComponent(f)}`;
+
+/**
+ * Artwork for the two mega-menu promo tiles. The storefront layout reads it
+ * from the database so the header never has to fetch on the client.
+ */
+export interface NavPromos {
+  women: Product | null;
+  men: Product | null;
+}
 
 export function Logo({ align = "center" }: { align?: "center" | "start" }) {
   return (
@@ -22,7 +32,11 @@ export function Logo({ align = "center" }: { align?: "center" | "start" }) {
   );
 }
 
-export default function Header() {
+/**
+ * `promos` is optional so the root 404 — which has no database read of its own
+ * — can still render the header; the promo tiles just sit it out.
+ */
+export default function Header({ promos = { women: null, men: null } }: { promos?: NavPromos }) {
   const store = useStore();
   const { totals, wishlist, hydrated } = store;
 
@@ -62,10 +76,12 @@ export default function Header() {
                       <li><Link href="/shop?cat=women">All Women</Link></li>
                     </ul>
                   </div>
-                  <Link className="mega__promo" href="/shop?collection=Summer%20Lawn%20'26">
-                    <Swatch pattern={byId("bl-102")!.pattern} colors={byId("bl-102")!.colors} />
-                    <strong>Summer Lawn &apos;26</strong><span>Fresh prints, from PKR 2,990</span>
-                  </Link>
+                  {promos.women && (
+                    <Link className="mega__promo" href={collectionHref(FEATURED_COLLECTION)}>
+                      <Swatch pattern={promos.women.pattern} colors={promos.women.colors} image={promos.women.image} />
+                      <strong>{FEATURED_COLLECTION}</strong><span>Fresh prints, from PKR 2,990</span>
+                    </Link>
+                  )}
                 </div>
               </li>
               <li>
@@ -92,10 +108,12 @@ export default function Header() {
                       <li><Link href="/shop?cat=men">All Men</Link></li>
                     </ul>
                   </div>
-                  <Link className="mega__promo" href="/shop?cat=men">
-                    <Swatch pattern={byId("bm-202")!.pattern} colors={byId("bm-202")!.colors} />
-                    <strong>Men&apos;s Essentials</strong><span>Wash &amp; wear from PKR 3,490</span>
-                  </Link>
+                  {promos.men && (
+                    <Link className="mega__promo" href="/shop?cat=men">
+                      <Swatch pattern={promos.men.pattern} colors={promos.men.colors} image={promos.men.image} />
+                      <strong>Men&apos;s Essentials</strong><span>Wash &amp; wear from PKR 3,490</span>
+                    </Link>
+                  )}
                 </div>
               </li>
               <li><Link className="nav__link" href="/shop?cat=kids">Kids</Link></li>
@@ -177,13 +195,28 @@ const POPULAR = ["lawn", "chiffon", "men", "embroidered", "winter"];
 function SearchOverlay() {
   const { searchOpen, closeSearch } = useStore();
   const [q, setQ] = useState("");
+  const [hits, setHits] = useState<Product[]>([]);
+  const [searching, setSearching] = useState(false);
   const pathname = usePathname();
   useEffect(() => { closeSearch(); }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const term = q.trim().toLowerCase();
-  const hits = term
-    ? PRODUCTS.filter((p) => [p.name, p.fabric, p.category, catName(p.category), p.collection, p.description].join(" ").toLowerCase().includes(term))
-    : [];
+  const term = q.trim();
+
+  // Searching runs on the database, so hold off until the typing settles.
+  useEffect(() => {
+    if (term.length < 2) { setHits([]); setSearching(false); return; }
+
+    let live = true;
+    setSearching(true);
+    const timer = setTimeout(() => {
+      apiGet<ProductPage>(`/api/products?q=${encodeURIComponent(term)}&perPage=8`)
+        .then((page) => { if (live) setHits(page.products); })
+        .catch(() => { if (live) setHits([]); })
+        .finally(() => { if (live) setSearching(false); });
+    }, 250);
+
+    return () => { live = false; clearTimeout(timer); };
+  }, [term]);
 
   return (
     <div className={`search${searchOpen ? " is-open" : ""}`} aria-hidden={!searchOpen}>
@@ -204,9 +237,11 @@ function SearchOverlay() {
         <div className="search__hint">
           Popular: {POPULAR.map((t) => <button key={t} onClick={() => setQ(t)}>{t[0].toUpperCase() + t.slice(1)}</button>)}
         </div>
-        {term && (hits.length
-          ? <div className="search__results">{hits.slice(0, 8).map((p) => <ProductCard key={p.id} product={p} />)}</div>
-          : <div className="search__empty">No results for “{term}”. Try “lawn”, “men” or “chiffon”.</div>)}
+        {term.length >= 2 && (hits.length
+          ? <div className="search__results">{hits.map((p) => <ProductCard key={p.id} product={p} />)}</div>
+          : searching
+            ? <div className="search__empty">Searching…</div>
+            : <div className="search__empty">No results for “{term}”. Try “lawn”, “men” or “chiffon”.</div>)}
       </div>
     </div>
   );
