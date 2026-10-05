@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/products";
+import { shopDayStart } from "@/lib/pos";
 
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -45,7 +46,33 @@ async function getStats() {
       }),
     ]);
 
-  return { revenue, last30, pending, products, lowStock, unread, subscribers, recent, top };
+  // Counter takings live in their own table — see the note on the Sale model
+  // in schema.prisma. Midnight is the shop's, not the server's.
+  const startOfToday = shopDayStart();
+  const sold = { status: "COMPLETED" as const };
+
+  const [counterToday, counter30] = await Promise.all([
+    prisma.sale.aggregate({
+      _sum: { total: true },
+      _count: true,
+      where: { ...sold, createdAt: { gte: startOfToday } },
+    }),
+    prisma.sale.aggregate({ _sum: { total: true }, _count: true, where: { ...sold, createdAt: { gte: since } } }),
+  ]);
+
+  return {
+    revenue,
+    last30,
+    pending,
+    products,
+    lowStock,
+    unread,
+    subscribers,
+    recent,
+    top,
+    counterToday,
+    counter30,
+  };
 }
 
 export default async function DashboardPage() {
@@ -59,7 +86,10 @@ export default async function DashboardPage() {
           <p>An overview of the last 30 days.</p>
         </div>
         <div className="adm-actions">
-          <Link className="adm-btn adm-btn--primary" href="/admin/products?new=1">
+          <Link className="adm-btn adm-btn--primary" href="/admin/pos">
+            New counter sale
+          </Link>
+          <Link className="adm-btn" href="/admin/products?new=1">
             Add product
           </Link>
         </div>
@@ -67,7 +97,14 @@ export default async function DashboardPage() {
 
       <div className="adm-stats">
         <div className="adm-stat">
-          <div className="adm-stat__label">Revenue · 30 days</div>
+          <div className="adm-stat__label">Counter · today</div>
+          <div className="adm-stat__value">{money(s.counterToday._sum.total ?? 0)}</div>
+          <div className="adm-stat__sub">
+            {s.counterToday._count} sale(s) · {money(s.counter30._sum.total ?? 0)} in 30 days
+          </div>
+        </div>
+        <div className="adm-stat">
+          <div className="adm-stat__label">Online · 30 days</div>
           <div className="adm-stat__value">{money(s.last30._sum.total ?? 0)}</div>
           <div className="adm-stat__sub">{money(s.revenue._sum.total ?? 0)} all time</div>
         </div>

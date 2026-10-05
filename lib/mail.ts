@@ -54,8 +54,17 @@ const esc = (s: string) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
+/**
+ * The logo mark as a PNG on an absolute URL — mail clients won't render an
+ * inline SVG, and many won't follow a relative path. If the image is blocked
+ * (Gmail's default for a first-time sender) the wordmark below still carries
+ * the brand, so nothing essential is lost.
+ */
+const logo = `${env.siteUrl}/brand/mark.png`;
+
 const shell = (title: string, body: string) => `
 <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#171614">
+  <img src="${logo}" width="40" height="40" alt="" style="display:block;border:0;margin:0 0 12px" />
   <h1 style="font-size:20px;margin:0 0 4px">BinAr Fabrics</h1>
   <p style="color:#8a8580;margin:0 0 24px;font-size:13px">${esc(title)}</p>
   ${body}

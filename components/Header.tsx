@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { FEATURED_COLLECTION, collectionHref, type Product, type ProductPage } from "@/lib/products";
 import { apiGet } from "@/lib/client";
 import { useStore } from "./StoreProvider";
+import BrandMark from "./BrandMark";
 import { BagIcon, CloseIcon, HeartIcon, MenuIcon, SearchIcon, UserIcon } from "./Icons";
 import ProductCard from "./ProductCard";
 import Swatch from "./Swatch";
@@ -23,11 +24,18 @@ export interface NavPromos {
   men: Product | null;
 }
 
+/**
+ * The lockup: the woven mark beside the wordmark. `align` is kept for the
+ * footer, which sits the lockup against the left edge of its column.
+ */
 export function Logo({ align = "center" }: { align?: "center" | "start" }) {
   return (
-    <Link className="logo" href="/" aria-label="BinAr Fabrics home" style={align === "start" ? { alignItems: "flex-start" } : undefined}>
-      <span className="logo__name">Bin<span>Ar</span></span>
-      <span className="logo__tag">Fabrics</span>
+    <Link className="logo" href="/" aria-label="BinAr Fabrics home" style={align === "start" ? { justifyContent: "flex-start" } : undefined}>
+      <BrandMark size={36} className="logo__mark" />
+      <span className="logo__text">
+        <span className="logo__name">Bin<span>Ar</span></span>
+        <span className="logo__tag">Fabrics</span>
+      </span>
     </Link>
   );
 }
@@ -155,7 +163,10 @@ function MobileNav() {
       <div className="mobile-nav__backdrop" onClick={closeMobile} />
       <nav className="mobile-nav__panel">
         <div className="mobile-nav__head">
-          <span className="logo__name">Bin<span style={{ color: "var(--green)" }}>Ar</span></span>
+          <span className="mobile-nav__brand">
+            <BrandMark size={28} />
+            <span className="logo__name">Bin<span style={{ color: "var(--brand-green)" }}>Ar</span></span>
+          </span>
           <button className="icon-btn" onClick={closeMobile} aria-label="Close menu"><CloseIcon /></button>
         </div>
         <ul className="mobile-nav__list" onClick={(e) => { if ((e.target as HTMLElement).closest("a")) closeMobile(); }}>

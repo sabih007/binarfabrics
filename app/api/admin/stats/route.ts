@@ -5,6 +5,7 @@
 import { handler, ok } from "@/lib/api";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { salesSummary } from "@/lib/sales";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -61,8 +62,19 @@ export const GET = handler(async () => {
     }),
   ]);
 
+  // Counter takings live in their own table — see the Sale model's note.
+  const counter = await salesSummary(thirtyDaysAgo);
+
   return ok({
     revenue: { allTime: revenueAll._sum.total ?? 0, last30Days: revenue30._sum.total ?? 0 },
+    counter: {
+      allTime: counter.allTime.revenue,
+      last30Days: counter.window.revenue,
+      sales: counter.window.count,
+      tax: counter.window.tax,
+      discount: counter.window.discount,
+      byPayment: counter.byPayment,
+    },
     orders: { total: orderCount, last30Days: revenue30._count, pending },
     catalogue: { products: productCount, lowStock },
     inbox: { unread: unreadMessages },

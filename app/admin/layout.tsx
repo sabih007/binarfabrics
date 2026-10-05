@@ -20,8 +20,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // means we're on the login screen — render it without the nav or padding.
   if (!session) return <div className="adm">{children}</div>;
 
+  // `adm--shell` turns on the sidebar grid; the login screen keeps the plain
+  // single-column `adm` so it can centre its card.
   return (
-    <div className="adm">
+    <div className="adm adm--shell">
       <AdminNav name={session.name} />
       <div className="adm__main">{children}</div>
     </div>

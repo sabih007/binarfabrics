@@ -1,0 +1,610 @@
+/* ==========================================================================
+   Point of sale + receipt.
+
+   Two concerns in one file: the till layout (screen) and the 80mm slip
+   (screen preview *and* print). Built on the tokens admin.css defines.
+
+   The screen follows the reference design: browse a tile grid on the left,
+   watch the bill build in a panel on the right, pay with one big button.
+   ========================================================================== */
+
+/* ------------------------------------------------------------------- till */
+
+.pos {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) 372px;
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .pos { grid-template-columns: minmax(0, 1fr); }
+}
+
+.pos__main { display: grid; gap: 16px; align-content: start; }
+
+/* The bill tracks with the page on a long catalogue. */
+.pos__side { position: sticky; top: 20px; }
+@media (max-width: 1100px) {
+  .pos__side { position: static; }
+}
+
+/* ------------------------------------------------------------ onboarding
+
+   The numbered steps and the dismissible strip exist for one reason: a
+   cashier's first shift. Everything here is signposting, not chrome.
+   -------------------------------------------------------------------------- */
+
+.pos-help {
+  position: relative;
+  padding: 15px 17px;
+  background: var(--adm-panel);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-r-lg);
+}
+.pos-help ol {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 7px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 84ch;
+  color: var(--adm-muted);
+}
+.pos-help strong { font-weight: 600; color: var(--adm-ink); }
+.pos-help__x {
+  margin-top: 12px;
+  padding: 6px 13px;
+  border: 1px solid var(--adm-line);
+  border-radius: 99px;
+  background: var(--adm-bg);
+  font: inherit;
+  font-size: 12px;
+  color: inherit;
+  cursor: pointer;
+}
+.pos-help__x:hover { background: var(--adm-sunken); }
+
+/* Numbered step heading. */
+.pos-step { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 13px; }
+.pos-step__n {
+  flex: none;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: var(--adm-ink);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+}
+.pos-step__title { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.3; }
+.pos-step__hint {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--adm-muted);
+  line-height: 1.45;
+  max-width: 62ch;
+}
+
+/* Disclosure for the parts most sales never touch. Deliberately quiet —
+   it should read as "there is more if you need it", not as an action. */
+.pos-more {
+  display: inline-block;
+  padding: 7px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--adm-ink);
+  cursor: pointer;
+  text-align: left;
+}
+.pos-more:hover { text-decoration: underline; }
+.pos-more--flush { margin-top: 0; }
+
+.pos-adjust { display: grid; justify-items: start; }
+.pos-adjust__body {
+  width: 100%;
+  margin-top: 4px;
+  padding: 13px 14px;
+  background: var(--adm-sunken);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-r-md);
+  display: grid;
+  gap: 7px;
+}
+
+/* -------------------------------------------------------------- filtering */
+
+.pos-filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.pos-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.pos-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--adm-line);
+  border-radius: 99px;
+  background: var(--adm-panel);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--adm-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pos-chip:hover { color: var(--adm-ink); }
+.pos-chip[aria-pressed="true"] {
+  color: var(--adm-ink);
+  border-color: var(--adm-ink);
+  font-weight: 600;
+}
+.pos-chip__n {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: var(--adm-sunken);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pos-chip[aria-pressed="true"] .pos-chip__n { background: var(--adm-accent); color: var(--adm-accent-ink); }
+
+.pos-search { flex: 1; min-width: 210px; max-width: 320px; }
+.pos-search input[type="search"] {
+  width: 100%;
+  padding: 10px 15px;
+  border: 1px solid var(--adm-line);
+  border-radius: 99px;
+  font: inherit;
+  font-size: 14px;
+  background: var(--adm-panel);
+}
+.pos-search input:focus { outline: 2px solid var(--adm-ink); outline-offset: -1px; border-color: var(--adm-ink); }
+
+/* ---------------------------------------------------------- product grid */
+
+.pos-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
+}
+
+.pos-tile {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: 11px;
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-r-lg);
+  background: var(--adm-panel);
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.pos-tile:hover { border-color: var(--adm-ink); transform: translateY(-2px); }
+.pos-tile:active { transform: none; }
+
+.pos-tile__media {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  margin-bottom: 7px;
+  border-radius: 13px;
+  background: var(--adm-sunken);
+  overflow: hidden;
+}
+.pos-tile__media img { width: 100%; height: 100%; object-fit: cover; }
+.pos-tile__letter {
+  font-family: var(--font-afacad), system-ui, sans-serif;
+  font-size: 34px;
+  font-weight: 600;
+  color: #c9c9cf;
+}
+.pos-tile__stock {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: rgba(20, 20, 22, 0.85);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pos-tile__stock.is-out { background: var(--adm-danger); }
+
+.pos-tile__name { font-weight: 600; font-size: 13.5px; line-height: 1.3; }
+.pos-tile__meta { font-size: 11.5px; color: var(--adm-muted); }
+.pos-tile__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 7px;
+}
+.pos-tile__price { font-weight: 700; font-variant-numeric: tabular-nums; }
+.pos-tile__add {
+  padding: 5px 12px;
+  border-radius: 99px;
+  background: var(--adm-sunken);
+  font-size: 12px;
+  font-weight: 600;
+}
+.pos-tile:hover .pos-tile__add { background: var(--adm-accent); color: var(--adm-accent-ink); }
+
+/* "Add something not in the catalogue" form. */
+.pos-manual {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 120px 96px auto;
+  align-items: end;
+}
+@media (max-width: 640px) {
+  .pos-manual { grid-template-columns: minmax(0, 1fr) 1fr; }
+}
+
+/* ------------------------------------------------------------------ bill */
+
+.pos-bill {
+  background: var(--adm-panel);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-r-lg);
+  overflow: hidden;
+}
+.pos-bill__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 16px;
+  border-bottom: 1px solid var(--adm-line);
+}
+.pos-bill__head h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.pos-reset {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--adm-danger);
+  cursor: pointer;
+}
+.pos-reset:hover { text-decoration: underline; }
+.pos-reset:disabled { opacity: 0.5; cursor: default; }
+
+.pos-bill__empty { padding: 36px 20px; text-align: center; color: var(--adm-muted); }
+.pos-bill__empty p { margin: 0 0 4px; font-weight: 500; color: var(--adm-ink); }
+.pos-bill__empty span { font-size: 13px; }
+
+.pos-bill__section { padding: 15px 16px; border-top: 1px solid var(--adm-line); }
+
+/* ---- lines ---- */
+
+.pos-lines {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  display: grid;
+  gap: 4px;
+  max-height: 42vh;
+  overflow-y: auto;
+}
+.pos-line { display: flex; gap: 11px; padding: 10px; border-radius: 13px; }
+.pos-line:hover { background: var(--adm-sunken); }
+
+.pos-line__thumb {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 11px;
+  background: var(--adm-sunken);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font-family: var(--font-afacad), system-ui, sans-serif;
+  font-size: 19px;
+  font-weight: 600;
+  color: #b9b9c0;
+}
+.pos-line__thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.pos-line__body { flex: 1; min-width: 0; display: grid; gap: 5px; }
+.pos-line__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.pos-line__name { font-size: 13px; font-weight: 600; line-height: 1.3; }
+.pos-line__x {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--adm-sunken);
+  color: var(--adm-muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.pos-line__x:hover { background: var(--adm-danger); color: #fff; }
+
+.pos-line__meta { font-size: 11.5px; color: var(--adm-muted); }
+.pos-line__meta select {
+  padding: 3px 7px;
+  border: 1px solid var(--adm-line);
+  border-radius: 7px;
+  font: inherit;
+  font-size: 11.5px;
+  background: var(--adm-panel);
+  color: inherit;
+}
+.pos-line__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pos-line__total { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Selling past the stock count is allowed — it just has to be obvious. */
+.pos-warn {
+  font-size: 11px;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 2px 7px;
+  justify-self: start;
+}
+
+.pos-empty__hint { margin-top: 6px; font-size: 13px; }
+
+/* Quantity stepper: −  2  + — the plus carries the accent, as in the
+   reference, because it is the control a cashier reaches for repeatedly. */
+.pos-qty { display: inline-flex; align-items: center; gap: 5px; }
+.pos-qty button {
+  width: 25px;
+  height: 25px;
+  border: 1px solid var(--adm-line);
+  border-radius: 50%;
+  background: var(--adm-panel);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  color: inherit;
+}
+.pos-qty button:hover:not(:disabled) { background: var(--adm-sunken); }
+.pos-qty button:disabled { opacity: 0.35; cursor: not-allowed; }
+.pos-qty .pos-qty__up {
+  background: var(--adm-accent);
+  border-color: var(--adm-accent);
+  color: var(--adm-accent-ink);
+  font-weight: 700;
+}
+.pos-qty .pos-qty__up:hover:not(:disabled) { background: var(--adm-accent-hover); }
+.pos-qty input {
+  width: 38px;
+  height: 25px;
+  border: 0;
+  text-align: center;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background: none;
+  color: inherit;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.pos-qty input::-webkit-outer-spin-button,
+.pos-qty input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ---------------------------------------------------------------- totals */
+
+.pos-sum {
+  display: grid;
+  gap: 9px;
+  margin-top: 13px;
+  padding: 14px;
+  background: var(--adm-sunken);
+  border-radius: var(--adm-r-md);
+}
+.pos-sum__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.pos-sum__row span:first-child { color: var(--adm-muted); }
+.pos-sum__row span:last-child { font-weight: 600; }
+.pos-sum__row--muted span:last-child { font-weight: 500; }
+.pos-sum__total {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  padding-top: 11px;
+  border-top: 1px solid var(--adm-line);
+  font-variant-numeric: tabular-nums;
+}
+.pos-sum__total span:first-child { font-size: 12px; font-weight: 600; color: var(--adm-muted); }
+.pos-sum__total span:last-child {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: var(--font-afacad), system-ui, sans-serif;
+}
+
+/* Discount amount/percent pair, and the tax rate box. */
+.pos-split { display: grid; grid-template-columns: 1fr 92px; gap: 8px; align-items: end; }
+.pos-seg { display: inline-flex; border: 1px solid var(--adm-line); border-radius: 99px; overflow: hidden; }
+.pos-seg button {
+  padding: 8px 14px;
+  border: 0;
+  background: var(--adm-panel);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--adm-muted);
+}
+.pos-seg button + button { border-left: 1px solid var(--adm-line); }
+.pos-seg button[aria-pressed="true"] { background: var(--adm-ink); color: #fff; font-weight: 500; }
+
+/* Payment method is a decision, not a detail — full width, finger-sized. */
+.pos-seg--wide { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
+.pos-seg--wide button { padding: 11px 8px; font-size: 14px; text-align: center; }
+
+.pos-change {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: var(--adm-r-md);
+  background: #ecfdf5;
+  border: 1px solid #c8ebdb;
+  color: #065f46;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.pos-change--short { background: #fdf2f2; border-color: #f5d5d5; color: #991b1b; }
+
+/* Change due is the number read across the counter, so it is set large
+   enough to take in without leaning towards the screen. */
+.pos-change--big { align-items: baseline; padding: 13px 15px; }
+.pos-change--big span:first-child {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.pos-change--big span:last-child {
+  font-size: 23px;
+  font-weight: 700;
+  font-family: var(--font-afacad), system-ui, sans-serif;
+}
+
+.pos-pay { display: grid; gap: 12px; }
+
+/* Quick-cash buttons wrap rather than squeeze — they get tapped. */
+.pos-tender { display: flex; flex-wrap: wrap; gap: 6px; }
+.pos-due { font-weight: 600; color: var(--adm-ink); }
+
+.pos-done { padding: 15px 16px; border-top: 1px solid var(--adm-line); display: grid; gap: 9px; }
+.pos-done .adm-btn { padding: 15px; font-size: 15px; }
+
+.pos-hint { color: var(--adm-muted); font-size: 11px; text-align: center; }
+
+/* Why the finish button is off, stated plainly under it. */
+.pos-blocked {
+  font-size: 12px;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--adm-r-md);
+  padding: 8px 11px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.pos-kbd {
+  font: inherit;
+  font-size: 10px;
+  padding: 1px 5px;
+  border: 1px solid var(--adm-line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: #fff;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- receipt */
+
+.rcpt {
+  width: 80mm;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 6mm 5mm;
+  background: #fff;
+  color: #000;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.rcpt__head { display: grid; gap: 1px; justify-items: center; text-align: center; margin-bottom: 7px; }
+.rcpt__mark { color: #000; margin-bottom: 5px; }
+.rcpt__head strong { font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; }
+.rcpt__head span { font-size: 11px; }
+
+.rcpt__void {
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  padding: 4px 0;
+  border: 1px dashed #000;
+  margin: 6px 0;
+}
+
+/* Dashes rather than a hairline: a thermal head renders these reliably. */
+.rcpt__rule { border-top: 1px dashed #000; margin: 6px 0; }
+
+.rcpt__row { display: flex; justify-content: space-between; gap: 8px; }
+.rcpt__row span:last-child { text-align: right; white-space: nowrap; }
+.rcpt__row--strong { font-size: 14px; font-weight: 700; }
+
+.rcpt__items { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.rcpt__name { word-break: break-word; }
+.rcpt__name em { font-style: normal; opacity: 0.8; }
+
+.rcpt__notes { margin: 6px 0 0; font-size: 11px; word-break: break-word; }
+.rcpt__foot { display: grid; gap: 3px; text-align: center; margin-top: 7px; }
+.rcpt__small { font-size: 10px; }
+
+/* On screen the slip sits on a card so it reads as paper. */
+.rcpt-paper {
+  background: #fff;
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-r-lg);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  padding: 4px 0;
+  overflow-x: auto;
+}
+
+/* ------------------------------------------------------------------ print
+
+   `visibility` rather than `display` — collapsing every ancestor's box
+   detaches the receipt from the page flow and Chrome then prints a blank
+   first sheet. Hiding ink while keeping boxes avoids that, and the absolute
+   position pulls the slip to the top-left corner.
+   -------------------------------------------------------------------------- */
+
+@media print {
+  @page { size: 80mm auto; margin: 0; }
+
+  html, body { background: #fff !important; }
+  body * { visibility: hidden !important; box-shadow: none !important; }
+
+  .rcpt, .rcpt * { visibility: visible !important; }
+  .rcpt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    padding: 3mm 4mm;
+    border: 0;
+    font-size: 11.5px;
+  }
+
+  /* Nothing chrome-like should reserve space on the roll. */
+  .adm__side, .adm__topbar, .adm__scrim, .adm-modal__backdrop, .adm-modal__head, .adm-modal__foot, .pos__side { display: none !important; }
+  .adm-modal, .adm-modal__panel, .adm-modal__body { position: static !important; padding: 0 !important; overflow: visible !important; max-height: none !important; box-shadow: none !important; }
+  .adm--shell .adm__main { margin-left: 0 !important; padding: 0 !important; }
+  .rcpt-paper { border: 0 !important; box-shadow: none !important; padding: 0 !important; }
+}

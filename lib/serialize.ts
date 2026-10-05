@@ -10,6 +10,8 @@ import type {
   Order as DbOrder,
   OrderItem as DbOrderItem,
   Product as DbProduct,
+  Sale as DbSale,
+  SaleItem as DbSaleItem,
 } from "@prisma/client";
 import type { Badge, Category, Pattern, Product } from "./types";
 
@@ -119,3 +121,44 @@ export function toApiOrder(o: DbOrder & { items: DbOrderItem[] }) {
 }
 
 export type ApiOrder = ReturnType<typeof toApiOrder>;
+
+/**
+ * Counter sale -> receipt-ready shape. `taxRate` is converted from basis
+ * points to a percentage here so no UI has to know the storage unit.
+ */
+export function toApiSale(s: DbSale & { items: DbSaleItem[] }) {
+  return {
+    id: s.id,
+    number: s.number,
+    status: s.status,
+    payment: s.payment,
+    cashierName: s.cashierName,
+    customerName: s.customerName,
+    phone: s.phone,
+    subtotal: s.subtotal,
+    discount: s.discount,
+    taxRate: s.taxRate / 100,
+    tax: s.tax,
+    total: s.total,
+    cashGiven: s.cashGiven,
+    cardAmount: s.cardAmount,
+    change: s.change,
+    notes: s.notes,
+    voidedAt: s.voidedAt?.toISOString() ?? null,
+    voidReason: s.voidReason,
+    items: s.items.map((i) => ({
+      id: i.id,
+      slug: i.slug,
+      name: i.name,
+      price: i.price,
+      qty: i.qty,
+      color: i.color,
+      size: i.size,
+      lineTotal: i.price * i.qty,
+    })),
+    createdAt: s.createdAt.toISOString(),
+  };
+}
+
+export type ApiSale = ReturnType<typeof toApiSale>;
+export type ApiSaleItem = ApiSale["items"][number];

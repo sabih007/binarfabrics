@@ -56,6 +56,9 @@ export function buildProductWhere(q: ProductQuery): Prisma.ProductWhereInput {
     and.push({
       OR: [
         { name: { contains: q.q, mode: "insensitive" } },
+        // The slug doubles as the product code on tags and at the till, so
+        // typing "bl-101" has to find it.
+        { slug: { contains: q.q, mode: "insensitive" } },
         { description: { contains: q.q, mode: "insensitive" } },
         { fabric: { contains: q.q, mode: "insensitive" } },
         { collection: { contains: q.q, mode: "insensitive" } },

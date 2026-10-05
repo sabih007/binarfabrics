@@ -238,3 +238,79 @@ export const orderUpdateSchema = z.object({
 export const messageUpdateSchema = z.object({
   status: z.enum(["NEW", "READ", "ARCHIVED"]),
 });
+
+// --------------------------------------------------------------------- pos
+
+/**
+ * One line on a counter sale. A catalogue line sends only `slug` and the
+ * price is read from the database; a manual line sends `name` + `price`
+ * because there is no catalogue row to read it from.
+ */
+export const saleLineSchema = z
+  .object({
+    slug: z.string().trim().max(64).nullish(),
+    name: optionalText(140),
+    price: z.coerce.number().int().min(0).max(10_000_000).optional(),
+    qty: z.coerce.number().int().min(1, "Quantity must be at least 1.").max(999),
+    color: z.string().trim().max(32).nullish(),
+    size: z.string().trim().max(16).nullish(),
+  })
+  .refine((l) => Boolean(l.slug) || (Boolean(l.name) && l.price !== undefined), {
+    message: "A manual line needs both a description and an amount.",
+    path: ["name"],
+  })
+  // A zero-rupee catalogue item is a pricing mistake; a zero-rupee manual
+  // line is usually a half-typed amount. Either way, don't ring it up.
+  .refine((l) => l.slug != null || (l.price ?? 0) > 0, {
+    message: "Enter an amount greater than zero.",
+    path: ["price"],
+  });
+
+export const saleCreateSchema = z
+  .object({
+    items: z.array(saleLineSchema).min(1, "Add at least one item.").max(200),
+    customerName: optionalText(80),
+    // The till leaves both customer boxes blank for most walk-ins, so an
+    // empty string has to mean "not given" rather than "invalid number".
+    phone: z.preprocess(
+      (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+      phone.optional()
+    ),
+
+    /** Flat rupees off, or a percentage of the subtotal — not both. */
+    discountMode: z.enum(["amount", "percent"]).default("amount"),
+    discountValue: z.coerce.number().min(0).max(10_000_000).default(0),
+    /** Sent as a percentage; stored as basis points. */
+    taxRate: z.coerce.number().min(0).max(100).default(0),
+
+    payment: z.enum(["CASH", "CARD", "MIXED"]).default("CASH"),
+    cashGiven: z.coerce.number().int().min(0).max(100_000_000).optional(),
+    cardAmount: z.coerce.number().int().min(0).max(100_000_000).optional(),
+
+    notes: optionalText(500),
+  })
+  .refine((s) => s.discountMode !== "percent" || s.discountValue <= 100, {
+    message: "A percentage discount cannot exceed 100.",
+    path: ["discountValue"],
+  })
+  .refine((s) => s.payment !== "MIXED" || (s.cardAmount ?? 0) > 0, {
+    message: "Enter the amount paid by card.",
+    path: ["cardAmount"],
+  });
+export type SaleCreateInput = z.infer<typeof saleCreateSchema>;
+
+export const saleVoidSchema = z.object({
+  status: z.literal("VOIDED"),
+  voidReason: clean(200, 3, "Please say why this sale is being voided."),
+});
+
+export const saleQuerySchema = z.object({
+  status: z.enum(["COMPLETED", "VOIDED"]).optional(),
+  payment: z.enum(["CASH", "CARD", "MIXED"]).optional(),
+  q: optionalText(60),
+  /** Inclusive calendar days in the shop's local reading, e.g. "2026-10-05". */
+  from: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  perPage: z.coerce.number().int().min(1).max(100).default(30),
+});
