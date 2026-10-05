@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
+import { BANK, bankEnabled, formatIban } from "@/lib/bank";
 import { useStore } from "@/components/StoreProvider";
 import Swatch from "@/components/Swatch";
 import { money } from "@/lib/products";
@@ -27,10 +28,10 @@ interface Quote {
 
 interface CheckoutResult {
   order: { number: string; total: number };
-  payment: { provider: "cod" | "stripe"; url?: string };
+  payment: { provider: "cod" | "stripe" | "bank"; url?: string };
 }
 
-type Pay = "COD" | "CARD";
+type Pay = "COD" | "CARD" | "BANK";
 
 export default function CheckoutForm({ cancelled }: { cancelled: boolean }) {
   const router = useRouter();
@@ -123,7 +124,11 @@ export default function CheckoutForm({ cancelled }: { cancelled: boolean }) {
       }
 
       clearCart();
-      showToast(`Order ${result.order.number} confirmed`);
+      showToast(
+        pay === "BANK"
+          ? `Order ${result.order.number} placed — transfer to confirm`
+          : `Order ${result.order.number} confirmed`
+      );
       router.push(`/checkout/success?order=${encodeURIComponent(result.order.number)}`);
     } catch (err) {
       if (err instanceof ApiError) {
@@ -232,6 +237,16 @@ export default function CheckoutForm({ cancelled }: { cancelled: boolean }) {
             </span>
           </label>
 
+          {bankEnabled && (
+            <label className={`pay__option${pay === "BANK" ? " is-active" : ""}`}>
+              <input type="radio" name="paymentMethod" value="BANK" checked={pay === "BANK"} onChange={() => setPay("BANK")} />
+              <span>
+                <strong>Bank transfer</strong>
+                <small>Transfer to our {BANK.name} account, then we confirm and dispatch.</small>
+              </span>
+            </label>
+          )}
+
           {cardEnabled && (
             <label className={`pay__option${pay === "CARD" ? " is-active" : ""}`}>
               <input type="radio" name="paymentMethod" value="CARD" checked={pay === "CARD"} onChange={() => setPay("CARD")} />
@@ -242,6 +257,38 @@ export default function CheckoutForm({ cancelled }: { cancelled: boolean }) {
             </label>
           )}
         </div>
+
+        {/* The details are shown before the order is placed as well as after,
+            so the customer can set the transfer up in another tab. */}
+        {pay === "BANK" && bankEnabled && (
+          <div className="bank-box">
+            <h3>Where to send the money</h3>
+            <dl>
+              <div>
+                <dt>Bank</dt>
+                <dd>{BANK.name}</dd>
+              </div>
+              <div>
+                <dt>Account title</dt>
+                <dd>{BANK.title}</dd>
+              </div>
+              <div>
+                <dt>IBAN</dt>
+                <dd className="bank-box__iban">{formatIban(BANK.iban)}</dd>
+              </div>
+              {BANK.account && (
+                <div>
+                  <dt>Account number</dt>
+                  <dd className="bank-box__iban">{BANK.account}</dd>
+                </div>
+              )}
+            </dl>
+            <p>
+              Place the order first — you&apos;ll get an order number to use as the transfer
+              reference. We dispatch once the payment shows in the account.
+            </p>
+          </div>
+        )}
         {err("paymentMethod")}
 
         <div>
@@ -250,7 +297,9 @@ export default function CheckoutForm({ cancelled }: { cancelled: boolean }) {
               ? "Placing your order…"
               : pay === "CARD"
                 ? `Continue to payment — ${money(total)}`
-                : `Place order — ${money(total)}`}
+                : pay === "BANK"
+                  ? `Place order — transfer ${money(total)}`
+                  : `Place order — ${money(total)}`}
           </button>
           <p className="checkout__terms">
             By placing this order you agree to our delivery and exchange policy.

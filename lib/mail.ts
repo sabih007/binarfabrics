@@ -7,6 +7,7 @@
    ========================================================================== */
 
 import { env } from "./env";
+import { BANK, bankEnabled, formatIban } from "./bank";
 import { money } from "./products";
 
 interface Mail {
@@ -117,7 +118,23 @@ export async function sendOrderConfirmation(order: OrderMail) {
   const payLine =
     order.paymentMethod === "COD"
       ? "Payment: <strong>Cash on delivery</strong> &mdash; please keep the exact amount ready."
-      : "Payment: <strong>Card</strong> &mdash; received, thank you.";
+      : order.paymentMethod === "BANK"
+        ? "Payment: <strong>Bank transfer</strong> &mdash; details below. We dispatch once it arrives."
+        : "Payment: <strong>Card</strong> &mdash; received, thank you.";
+
+  /* The customer has to act on this one, so the account sits in the email
+     rather than only on a page they may already have closed. */
+  const bankBlock =
+    order.paymentMethod === "BANK" && bankEnabled
+      ? `<table style="width:100%;border-collapse:collapse;font-size:14px;background:#f7f3ec;border-radius:8px">
+      <tr><td colspan="2" style="padding:14px 14px 4px"><strong>Where to send ${money(order.total)}</strong></td></tr>
+      <tr><td style="padding:4px 14px">Bank</td><td style="padding:4px 14px;text-align:right">${esc(BANK.name)}</td></tr>
+      <tr><td style="padding:4px 14px">Account title</td><td style="padding:4px 14px;text-align:right">${esc(BANK.title)}</td></tr>
+      <tr><td style="padding:4px 14px">IBAN</td><td style="padding:4px 14px;text-align:right">${esc(formatIban(BANK.iban))}</td></tr>
+      <tr><td style="padding:4px 14px 14px">Reference</td><td style="padding:4px 14px 14px;text-align:right"><strong>${esc(order.number)}</strong></td></tr>
+    </table>
+    <p style="font-size:13px;color:#8a8580">Please quote <strong>${esc(order.number)}</strong> as the transfer reference so we can match your payment.</p>`
+      : "";
 
   const body = `
     <p>Thank you, ${firstName} &mdash; we have your order.</p>
@@ -130,6 +147,7 @@ export async function sendOrderConfirmation(order: OrderMail) {
       <strong>Delivering to</strong><br />${esc(order.address)}, ${esc(order.city)}<br />${esc(order.phone)}
     </p>
     <p style="font-size:14px">${payLine}</p>
+    ${bankBlock}
     <p style="font-size:14px">We will confirm by phone before dispatch. Delivery usually takes 2&ndash;4 working days.</p>`;
 
   return send({

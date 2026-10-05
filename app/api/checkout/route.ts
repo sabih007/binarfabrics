@@ -2,9 +2,11 @@
    POST /api/checkout
 
    Body: { items:[{slug,qty,color?,size?}], customerName, phone, email?,
-           address, city, postalCode?, notes?, paymentMethod:"COD"|"CARD" }
+           address, city, postalCode?, notes?, paymentMethod:"COD"|"CARD"|"BANK" }
 
    COD  -> order is created, confirmed, stock reserved, emails sent.
+   BANK -> order is created PENDING/UNPAID with stock reserved; the shop
+           confirms it by hand once the transfer lands.
    CARD -> order is created as PENDING/UNPAID and a Stripe Checkout URL is
            returned; the webhook confirms it once payment succeeds.
    ========================================================================== */
@@ -68,6 +70,35 @@ export const POST = handler(async (req: Request) => {
       });
       throw err;
     }
+  }
+
+  /* ---- bank transfer -----------------------------------------------------
+     The money arrives out of band, so the order stays PENDING and UNPAID
+     until someone sees it in the account and marks it paid in the admin.
+     Stock is still reserved — the customer has committed, and an order that
+     sells out between placing and paying would be worse than a held piece. */
+  if (input.paymentMethod === "BANK") {
+    const placed = await prisma.order.findUniqueOrThrow({
+      where: { id: order.id },
+      include: { items: true },
+    });
+
+    const bankMail = {
+      number: placed.number,
+      customerName: placed.customerName,
+      email: placed.email,
+      phone: placed.phone,
+      address: placed.address,
+      city: placed.city,
+      paymentMethod: placed.paymentMethod,
+      subtotal: placed.subtotal,
+      shipping: placed.shipping,
+      total: placed.total,
+      items: placed.items.map((i) => ({ name: i.name, qty: i.qty, price: i.price })),
+    };
+    await Promise.allSettled([sendOrderConfirmation(bankMail), sendOrderNotification(bankMail)]);
+
+    return ok({ order: toApiOrder(placed), payment: { provider: "bank" } }, { status: 201 });
   }
 
   // ---- cash on delivery: done, subject to a phone confirmation ----------

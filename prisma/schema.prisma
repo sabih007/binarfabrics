@@ -87,6 +87,8 @@ enum OrderStatus {
 enum PaymentMethod {
   COD
   CARD
+  /// Direct transfer to the shop bank account, confirmed by hand.
+  BANK
 }
 
 enum PaymentStatus {

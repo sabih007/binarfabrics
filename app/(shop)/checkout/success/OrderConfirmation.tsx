@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BANK, bankEnabled, formatIban } from "@/lib/bank";
 import { useEffect, useState } from "react";
 import { useStore } from "@/components/StoreProvider";
 import { money } from "@/lib/products";
@@ -9,7 +10,7 @@ import { apiGet } from "@/lib/client";
 interface Order {
   number: string;
   status: string;
-  paymentMethod: "COD" | "CARD";
+  paymentMethod: "COD" | "CARD" | "BANK";
   paymentStatus: string;
   customerName: string;
   phone: string;
@@ -23,6 +24,12 @@ interface Order {
   items: { id: string; name: string; price: number; qty: number; lineTotal: number }[];
   createdAt: string;
 }
+
+const PAY_LABEL: Record<string, string> = {
+  COD: "Cash on delivery",
+  CARD: "Card",
+  BANK: "Bank transfer",
+};
 
 const STATUS_COPY: Record<string, string> = {
   PENDING: "Awaiting payment",
@@ -115,7 +122,7 @@ export default function OrderConfirmation({ orderNumber }: { orderNumber: string
             <div>
               <span>Payment</span>
               <strong>
-                {order.paymentMethod === "COD" ? "Cash on delivery" : "Card"}
+                {PAY_LABEL[order.paymentMethod]}
                 {order.paymentStatus === "PAID" ? " · paid" : ""}
               </strong>
             </div>
@@ -161,9 +168,51 @@ export default function OrderConfirmation({ orderNumber }: { orderNumber: string
             </div>
           )}
           <div className="co-row co-row--total">
-            <span>{order.paymentMethod === "COD" ? "Due on delivery" : "Paid"}</span>
+            <span>
+              {order.paymentMethod === "COD"
+                ? "Due on delivery"
+                : order.paymentMethod === "BANK"
+                  ? order.paymentStatus === "PAID" ? "Paid" : "Awaiting your transfer"
+                  : "Paid"}
+            </span>
             <span>{money(order.total)}</span>
           </div>
+
+          {/* The order number doubles as the transfer reference — it is how
+              an incoming payment gets matched back to this order. */}
+          {order.paymentMethod === "BANK" && order.paymentStatus !== "PAID" && bankEnabled && (
+            <div className="bank-box">
+              <h3>Transfer {money(order.total)} to complete your order</h3>
+              <dl>
+                <div>
+                  <dt>Bank</dt>
+                  <dd>{BANK.name}</dd>
+                </div>
+                <div>
+                  <dt>Account title</dt>
+                  <dd>{BANK.title}</dd>
+                </div>
+                <div>
+                  <dt>IBAN</dt>
+                  <dd className="bank-box__iban">{formatIban(BANK.iban)}</dd>
+                </div>
+                {BANK.account && (
+                  <div>
+                    <dt>Account number</dt>
+                    <dd className="bank-box__iban">{BANK.account}</dd>
+                  </div>
+                )}
+                <div>
+                  <dt>Reference</dt>
+                  <dd className="bank-box__iban">{order.number}</dd>
+                </div>
+              </dl>
+              <p>
+                Put <strong>{order.number}</strong> in the transfer reference so we can match it.
+                We&apos;ll confirm and dispatch once it arrives — usually the same working day.
+              </p>
+            </div>
+          )}
         </div>
       )}
 

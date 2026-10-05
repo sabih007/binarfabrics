@@ -717,3 +717,20 @@ body.no-scroll { overflow: hidden; }
 .swatch--photo::before { display: none; }
 .swatch--photo img { z-index: 1; }
 .swatch--photo::after { z-index: 2; }
+
+/* ---------- Bank transfer details ---------- */
+.bank-box {
+  margin-top: 16px;
+  padding: 18px 20px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.bank-box h3 { font-size: 15px; margin: 0 0 12px; font-family: var(--sans); font-weight: 600; }
+.bank-box dl { margin: 0; display: grid; gap: 8px; }
+.bank-box dl > div { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; }
+.bank-box dt { font-size: 13px; color: var(--ink-3); }
+.bank-box dd { margin: 0; font-size: 14px; font-weight: 500; text-align: right; }
+/* An account number is copied by eye — give it room and even spacing. */
+.bank-box__iban { font-variant-numeric: tabular-nums; letter-spacing: 0.04em; word-break: break-all; }
+.bank-box p { margin: 12px 0 0; font-size: 13px; color: var(--ink-2); line-height: 1.5; }

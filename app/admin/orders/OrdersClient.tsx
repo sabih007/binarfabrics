@@ -23,7 +23,7 @@ interface Order {
   id: string;
   number: string;
   status: Status;
-  paymentMethod: "COD" | "CARD";
+  paymentMethod: "COD" | "CARD" | "BANK";
   paymentStatus: "UNPAID" | "PAID" | "REFUNDED" | "FAILED";
   customerName: string;
   phone: string;
@@ -188,7 +188,7 @@ export default function OrdersClient() {
                         </div>
                       </td>
                       <td>
-                        {o.paymentMethod === "COD" ? "Cash on delivery" : "Card"}
+                        {o.paymentMethod === "COD" ? "Cash on delivery" : o.paymentMethod === "BANK" ? "Bank transfer" : "Card"}
                         <div style={{ marginTop: 4 }}>
                           <span className={`adm-pill adm-pill--${o.paymentStatus}`}>{o.paymentStatus}</span>
                         </div>

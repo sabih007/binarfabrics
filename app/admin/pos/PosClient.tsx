@@ -90,8 +90,16 @@ function Step({ n, title, hint }: { n: number; title: string; hint?: string }) {
   );
 }
 
-/** Product tile. Falls back to the first letter when there's no photo. */
-function Tile({ p, onAdd }: { p: Found; onAdd: (p: Found) => void }) {
+/**
+ * Product tile. Falls back to the first letter when there's no photo.
+ *
+ * `inBasket` is what this sale has already taken, so the badge counts down
+ * as the cashier taps rather than repeating a figure that stopped being true
+ * on the first tap.
+ */
+function Tile({ p, inBasket, onAdd }: { p: Found; inBasket: number; onAdd: (p: Found) => void }) {
+  const left = p.stock - inBasket;
+
   return (
     <button type="button" className="pos-tile" onClick={() => onAdd(p)}>
       <span className="pos-tile__media">
@@ -103,8 +111,8 @@ function Tile({ p, onAdd }: { p: Found; onAdd: (p: Found) => void }) {
             {p.name.charAt(0)}
           </span>
         )}
-        <span className={p.stock > 0 ? "pos-tile__stock" : "pos-tile__stock is-out"}>
-          {p.stock > 0 ? `${p.stock} in stock` : "Out of stock"}
+        <span className={left > 0 ? "pos-tile__stock" : "pos-tile__stock is-out"}>
+          {left > 0 ? `${left} in stock` : left === 0 ? "None left" : `${-left} oversold`}
         </span>
       </span>
       <span className="pos-tile__name">{p.name}</span>
@@ -175,16 +183,20 @@ export default function PosClient() {
    * makes the chip counts agree with what's actually on screen. The cap is
    * the API's own maximum; a shop that outgrows it wants paging here.
    */
-  useEffect(() => {
-    let cancelled = false;
-    apiGet<{ products: Found[] }>("/api/products?perPage=100&sort=featured")
-      .then((d) => !cancelled && setCatalogue(d.products))
-      .catch(() => !cancelled && setError("Couldn't load the catalogue. You can still type items in by hand."))
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
+  const loadCatalogue = useCallback(async () => {
+    try {
+      const d = await apiGet<{ products: Found[] }>("/api/products?perPage=100&sort=featured");
+      setCatalogue(d.products);
+    } catch {
+      setError("Couldn't load the catalogue. You can still type items in by hand.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadCatalogue();
+  }, [loadCatalogue]);
 
   /** Chips: every category present in the catalogue, with its count. */
   const categories = useMemo(() => {
@@ -197,6 +209,16 @@ export default function PosClient() {
     }
     return [...seen.values()].sort((a, b) => b.count - a.count);
   }, [catalogue]);
+
+  /** How many of each catalogue line this sale has already taken. */
+  const basketBySlug = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const l of lines) {
+      if (!l.slug) continue;
+      counts.set(l.slug, (counts.get(l.slug) ?? 0) + l.qty);
+    }
+    return counts;
+  }, [lines]);
 
   const shown = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -366,6 +388,9 @@ export default function PosClient() {
         notes: notes.trim(),
       });
       setDone(res.sale);
+      // The sale just moved stock. Pull the catalogue again so the next
+      // customer's tiles show what is actually left on the shelf.
+      loadCatalogue();
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -538,7 +563,7 @@ export default function PosClient() {
         ) : (
           <div className="pos-grid">
             {shown.map((p) => (
-              <Tile key={p.slug} p={p} onAdd={addProduct} />
+              <Tile key={p.slug} p={p} inBasket={basketBySlug.get(p.slug) ?? 0} onAdd={addProduct} />
             ))}
           </div>
         )}

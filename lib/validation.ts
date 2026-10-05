@@ -104,7 +104,7 @@ export const checkoutSchema = z.object({
   city: clean(80, 2, "City is required."),
   postalCode: optionalText(12),
   notes: optionalText(500),
-  paymentMethod: z.enum(["COD", "CARD"]).default("COD"),
+  paymentMethod: z.enum(["COD", "CARD", "BANK"]).default("COD"),
 });
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 
