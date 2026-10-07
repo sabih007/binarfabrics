@@ -18,6 +18,8 @@
 }
 @media (max-width: 1100px) {
   .pos { grid-template-columns: minmax(0, 1fr); }
+  /* Room for the docked total, so it never covers the last row. */
+  .pos { padding-bottom: 74px; }
 }
 
 .pos__main { display: grid; gap: 16px; align-content: start; }
@@ -275,6 +277,7 @@
   border-bottom: 1px solid var(--adm-line);
 }
 .pos-bill__head h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.pos-bill__head .pos-step { margin-bottom: 0; }
 .pos-reset {
   border: 0;
   background: none;
@@ -341,14 +344,28 @@
 .pos-line__x:hover { background: var(--adm-danger); color: #fff; }
 
 .pos-line__meta { font-size: 11.5px; color: var(--adm-muted); }
-.pos-line__meta select {
-  padding: 3px 7px;
+
+/* Size is one tap, not a dropdown: at a counter, opening a select, reading
+   it and picking is three interactions for a choice of two or three. */
+.pos-sizes { display: flex; flex-wrap: wrap; gap: 4px; }
+.pos-size {
+  min-width: 30px;
+  padding: 4px 9px;
   border: 1px solid var(--adm-line);
-  border-radius: 7px;
+  border-radius: 99px;
+  background: var(--adm-panel);
   font: inherit;
   font-size: 11.5px;
-  background: var(--adm-panel);
-  color: inherit;
+  font-weight: 600;
+  color: var(--adm-muted);
+  cursor: pointer;
+  line-height: 1.3;
+}
+.pos-size:hover { color: var(--adm-ink); border-color: var(--adm-ink); }
+.pos-size[aria-pressed="true"] {
+  background: var(--adm-ink);
+  border-color: var(--adm-ink);
+  color: #fff;
 }
 .pos-line__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .pos-line__total { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -514,6 +531,41 @@
   text-align: center;
 }
 
+/* ------------------------------------------------------------------- dock
+
+   On a tablet the bill is a long scroll below the catalogue. This keeps the
+   total and the finish button within thumb reach the whole way down; above
+   1100px the sticky bill panel already does that job, so it is hidden.
+   -------------------------------------------------------------------------- */
+
+.pos-dock { display: none; }
+
+@media (max-width: 1100px) {
+  .pos-dock {
+    position: fixed;
+    z-index: 30;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: var(--adm-panel);
+    border-top: 1px solid var(--adm-line);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  }
+  .pos-dock__sum { display: grid; gap: 1px; font-variant-numeric: tabular-nums; }
+  .pos-dock__sum span { font-size: 11px; color: var(--adm-muted); }
+  .pos-dock__sum strong {
+    font-size: 19px;
+    font-weight: 700;
+    font-family: var(--font-afacad), system-ui, sans-serif;
+  }
+  .pos-dock .adm-btn { padding: 12px 20px; }
+}
+
 .pos-kbd {
   font: inherit;
   font-size: 10px;
@@ -585,8 +637,17 @@
    position pulls the slip to the top-left corner.
    -------------------------------------------------------------------------- */
 
+/* Metrics the slip is measured at before printing — see lib/print.ts. These
+   have to stay in step with the `.rcpt` overrides in the print block below,
+   or the measured height won't match the printed one. */
+.rcpt--measure { padding: 3mm 4mm; font-size: 11.5px; }
+
 @media print {
-  @page { size: 80mm auto; margin: 0; }
+  /* Overridden per-receipt by lib/print.ts with the measured height. This is
+     the fallback for a print the script didn't go through: two real lengths,
+     because `size: 80mm auto` is invalid CSS and Chrome silently discards it
+     — which lands the slip on a Letter sheet. */
+  @page { size: 80mm 200mm; margin: 0; }
 
   html, body { background: #fff !important; }
   body * { visibility: hidden !important; box-shadow: none !important; }
@@ -603,7 +664,7 @@
   }
 
   /* Nothing chrome-like should reserve space on the roll. */
-  .adm__side, .adm__topbar, .adm__scrim, .adm-modal__backdrop, .adm-modal__head, .adm-modal__foot, .pos__side { display: none !important; }
+  .adm__side, .adm__topbar, .adm__scrim, .adm-modal__backdrop, .adm-modal__head, .adm-modal__foot, .pos__side, .pos-dock { display: none !important; }
   .adm-modal, .adm-modal__panel, .adm-modal__body { position: static !important; padding: 0 !important; overflow: visible !important; max-height: none !important; box-shadow: none !important; }
   .adm--shell .adm__main { margin-left: 0 !important; padding: 0 !important; }
   .rcpt-paper { border: 0 !important; box-shadow: none !important; padding: 0 !important; }

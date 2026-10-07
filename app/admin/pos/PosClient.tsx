@@ -6,6 +6,7 @@ import { money } from "@/lib/products";
 import { DEFAULT_TAX_RATE_BP, bpToPercent, percentToBp, resolveDiscount, saleTotals } from "@/lib/pos";
 import type { ApiSale } from "@/lib/serialize";
 import Receipt from "@/components/admin/Receipt";
+import { printReceipt } from "@/lib/print";
 
 /* ------------------------------------------------------------------ types */
 
@@ -56,8 +57,22 @@ const newKey = () =>
 /** Bare grouped number — the label carries "Rs", not every figure. */
 const rs = (n: number) => n.toLocaleString("en-PK");
 
-/** Notes the customer is likely to hand over, for the quick-cash buttons. */
-const TENDERS = [500, 1000, 2000, 5000];
+/**
+ * One-tap cash amounts for whatever is still owed: the round figures just
+ * above the bill, plus the note a customer is likely to hand over. Tapping
+ * one *sets* the cash received, so the change appears in a single tap rather
+ * than the cashier adding notes up in their head.
+ */
+function tenderOptions(owed: number): number[] {
+  if (owed <= 0) return [];
+  const amounts = new Set<number>();
+  for (const step of [100, 500, 1000, 5000]) {
+    const up = Math.ceil(owed / step) * step;
+    if (up > owed) amounts.add(up);
+  }
+  for (const note of [500, 1000, 2000, 5000]) if (note > owed) amounts.add(note);
+  return [...amounts].sort((a, b) => a - b).slice(0, 3);
+}
 
 /**
  * The three-step strip is for a cashier's first shift, so it remembers being
@@ -135,6 +150,7 @@ export default function PosClient() {
   const [cat, setCat] = useState("all");
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  const billRef = useRef<HTMLElement>(null);
 
   // ---- basket ---------------------------------------------------------
   const [lines, setLines] = useState<Line[]>([]);
@@ -228,7 +244,8 @@ export default function PosClient() {
       return (
         p.name.toLowerCase().includes(term) ||
         p.slug.toLowerCase().includes(term) ||
-        p.fabric.toLowerCase().includes(term)
+        p.fabric.toLowerCase().includes(term) ||
+        p.categoryName.toLowerCase().includes(term)
       );
     });
   }, [catalogue, cat, query]);
@@ -252,6 +269,8 @@ export default function PosClient() {
   /** What's left for the customer to pay in cash. */
   const owed = Math.max(0, totals.total - Math.min(card, totals.total));
 
+  const tenders = useMemo(() => tenderOptions(owed), [owed]);
+
   /**
    * Why the finish button is off, in the words a cashier would use. A dead
    * button with no explanation is the most confusing thing a till can do.
@@ -263,13 +282,85 @@ export default function PosClient() {
     return null;
   })();
 
+  /* --------------------------------------------------------- shortcuts
+
+     The counter keyboard beats the mouse, and a barcode scanner is just a
+     keyboard that types fast and presses Enter — both are served here. The
+     handler binds once and reads fresh state through a ref, so it never
+     reattaches between keystrokes. */
+
+  const latest = useRef({
+    finish: () => {},
+    exact: () => {},
+    blocked: null as string | null,
+    done: false,
+  });
+
+  useEffect(() => {
+    latest.current = {
+      finish: complete,
+      exact: () => setCashGiven(String(owed)),
+      blocked,
+      done: done !== null,
+    };
+  });
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const el = e.target as HTMLElement | null;
+      const typing =
+        !!el &&
+        (el.tagName === "INPUT" ||
+          el.tagName === "SELECT" ||
+          el.tagName === "TEXTAREA" ||
+          el.isContentEditable);
+      const now = latest.current;
+
+      if (e.key === "F2") {
+        e.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+        return;
+      }
+      if (e.key === "F4" && !now.done) {
+        e.preventDefault();
+        now.exact();
+        return;
+      }
+      if (e.key === "F9" && !now.done) {
+        e.preventDefault();
+        if (!now.blocked) now.finish();
+        return;
+      }
+      if (e.key === "Escape" && el === searchRef.current) {
+        setQuery("");
+        return;
+      }
+
+      // A scan — or a cashier simply starting to type — while focus sits
+      // nowhere useful lands in the search box instead of being swallowed.
+      // Letters, digits and a dash only: Space and Enter have to keep working
+      // as "press the button I'm on".
+      if (!typing && /^[\w-]$/.test(e.key) && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        searchRef.current?.focus();
+      }
+    }
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   /* -------------------------------------------------------- basket ops */
 
   const addProduct = useCallback((p: Found) => {
+    // One size on the product means there is nothing to choose — fill it in
+    // rather than asking the cashier to confirm the obvious.
+    const size = p.sizes.length === 1 ? p.sizes[0]! : null;
+
     setLines((prev) => {
-      // Same product, no size chosen yet → bump the existing row instead of
+      // Same product at the same size → bump the existing row instead of
       // stacking duplicates, which is what tapping twice means.
-      const at = prev.findIndex((l) => l.slug === p.slug && l.size === null);
+      const at = prev.findIndex((l) => l.slug === p.slug && l.size === size);
       if (at >= 0) {
         const next = [...prev];
         next[at] = { ...next[at]!, qty: next[at]!.qty + 1 };
@@ -283,7 +374,7 @@ export default function PosClient() {
           name: p.name,
           price: p.price,
           qty: 1,
-          size: null,
+          size,
           stock: p.stock,
           sizeOptions: p.sizes,
           image: p.image,
@@ -418,7 +509,7 @@ export default function PosClient() {
             </p>
           </div>
           <div className="adm-actions">
-            <button className="adm-btn adm-btn--primary" onClick={() => window.print()}>
+            <button className="adm-btn adm-btn--primary" onClick={printReceipt}>
               Print receipt
             </button>
             <button
@@ -464,7 +555,6 @@ export default function PosClient() {
         <div className="adm__head">
           <div>
             <h1>New sale</h1>
-            <p>Tap what the customer is buying. It builds the bill on the right.</p>
           </div>
           <div className="adm-actions">
             {!helpOpen && (
@@ -479,16 +569,23 @@ export default function PosClient() {
           <div className="pos-help">
             <ol>
               <li>
-                <strong>Add the items.</strong> Tap a product below, or search by name or the code
-                on the tag. Tap the same one twice and the quantity goes up.
+                <strong>Add the items.</strong> Tap a product below, or just start typing the name
+                or the code on the tag — a scan goes straight into the search box too. Enter adds
+                the first match. Tap the same product again and the quantity goes up.
               </li>
               <li>
-                <strong>Check the bill.</strong> It adds up on the right. Only open discount or
-                GST if this sale needs them.
+                <strong>Check the bill.</strong> It adds up on the right. Where a product comes in
+                sizes, tap the one being sold. Only open discount or GST if this sale needs them.
               </li>
               <li>
-                <strong>Take the money.</strong> Choose cash or card, type what the customer handed
-                you, and the change works itself out. Then press the green button and print.
+                <strong>Take the money.</strong> Choose cash or card, then tap the amount the
+                customer handed over — the change works itself out. Press the green button and
+                print.
+              </li>
+              <li>
+                <strong>Without the mouse.</strong> <kbd className="pos-kbd">F2</kbd> jumps to
+                search, <kbd className="pos-kbd">F4</kbd> fills in the exact cash, and{" "}
+                <kbd className="pos-kbd">F9</kbd> finishes the sale.
               </li>
             </ol>
             <button className="pos-help__x" onClick={dismissHelp}>
@@ -502,6 +599,12 @@ export default function PosClient() {
             {error}
           </div>
         )}
+
+        <Step
+          n={1}
+          title="Add the items"
+          hint="Tap a product, or type a name or the code from the tag and press Enter. Tap the same product again to raise the quantity."
+        />
 
         <div className="pos-filters">
           <div className="pos-chips" role="group" aria-label="Filter by category">
@@ -532,7 +635,7 @@ export default function PosClient() {
               type="search"
               value={query}
               autoFocus
-              placeholder="Search by name or code…"
+              placeholder="Search or scan a code…  (F2)"
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
                 // Enter adds the only thing on screen — the fast path when a
@@ -627,10 +730,10 @@ export default function PosClient() {
       </div>
 
       {/* ---------------------------------------------------- bill side */}
-      <aside className="pos__side">
+      <aside className="pos__side" ref={billRef}>
         <div className="pos-bill">
           <div className="pos-bill__head">
-            <h2>This sale</h2>
+            <Step n={2} title="Check the bill" />
             {lines.length > 0 && (
               <button className="pos-reset" onClick={clearSale} disabled={saving}>
                 Start over
@@ -671,22 +774,29 @@ export default function PosClient() {
 
                     <div className="pos-line__meta">
                       {line.sizeOptions.length > 0 ? (
-                        <select
-                          aria-label={`Size for ${line.name}`}
-                          value={line.size ?? ""}
-                          onChange={(e) => patchLine(line.key, { size: e.target.value || null })}
-                        >
-                          <option value="">Pick a size</option>
+                        <div className="pos-sizes" role="group" aria-label={`Size for ${line.name}`}>
                           {line.sizeOptions.map((s) => (
-                            <option key={s} value={s}>
+                            <button
+                              key={s}
+                              type="button"
+                              className="pos-size"
+                              aria-pressed={line.size === s}
+                              onClick={() => patchLine(line.key, { size: line.size === s ? null : s })}
+                            >
                               {s}
-                            </option>
+                            </button>
                           ))}
-                        </select>
+                        </div>
                       ) : (
                         <span>{line.slug ? `Code ${line.slug}` : "Typed in by hand"}</span>
                       )}
                     </div>
+
+                    {/* Easy to skip in a hurry, and a receipt with no size
+                        starts an argument later — so say so on the line. */}
+                    {line.sizeOptions.length > 0 && !line.size && (
+                      <div className="pos-warn">Tap the size the customer is taking</div>
+                    )}
 
                     {/* Counter sales may outrun the stock count, but the
                         cashier should see it happen. */}
@@ -893,20 +1003,20 @@ export default function PosClient() {
                     <button
                       className="adm-btn adm-btn--sm"
                       type="button"
-                      disabled={totals.total === 0}
+                      disabled={owed <= 0}
                       onClick={() => setCashGiven(String(owed))}
                     >
                       Exact{owed > 0 ? ` · ${rs(owed)}` : ""}
                     </button>
-                    {TENDERS.map((note) => (
+                    {tenders.map((amount) => (
                       <button
-                        key={note}
+                        key={amount}
                         className="adm-btn adm-btn--sm"
                         type="button"
-                        title={`Add a ${rs(note)} note`}
-                        onClick={() => setCashGiven(String(num(cashGiven) + note))}
+                        title={`Customer handed over ${rs(amount)}`}
+                        onClick={() => setCashGiven(String(amount))}
                       >
-                        +{rs(note)}
+                        {rs(amount)}
                       </button>
                     ))}
                     {cash > 0 && (
@@ -994,9 +1104,37 @@ export default function PosClient() {
             ) : (
               <p className="pos-hint">Saves the sale, then shows the receipt to print.</p>
             )}
+            <p className="pos-hint">
+              <kbd className="pos-kbd">F2</kbd> search · <kbd className="pos-kbd">F4</kbd> exact cash ·{" "}
+              <kbd className="pos-kbd">F9</kbd> finish
+            </p>
           </div>
         </div>
       </aside>
+
+      {/* Below 1100px the bill sits under the whole catalogue, so the running
+          total and the way to finish follow the cashier down the page. */}
+      {lines.length > 0 && (
+        <div className="pos-dock">
+          <div className="pos-dock__sum">
+            <span>
+              {itemCount} item{itemCount === 1 ? "" : "s"}
+            </span>
+            <strong>{money(totals.total)}</strong>
+          </div>
+          <button
+            type="button"
+            className="adm-btn adm-btn--primary"
+            disabled={saving}
+            onClick={() => {
+              if (blocked) billRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+              else complete();
+            }}
+          >
+            {saving ? "Saving…" : blocked ? "Go to the bill" : "Finish sale"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
