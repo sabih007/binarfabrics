@@ -69,7 +69,9 @@ export function toAdminProduct(p: ProductRow) {
   };
 }
 
-export function toApiCategory(c: DbCategory & { _count?: { products: number } }): ApiCategory {
+export function toApiCategory(
+  c: DbCategory & { _count?: { products: number }; parent?: DbCategory | null }
+): ApiCategory {
   return {
     id: c.id,
     slug: c.slug,
@@ -83,6 +85,9 @@ export function toApiCategory(c: DbCategory & { _count?: { products: number } })
     active: c.active,
     showOnHome: c.showOnHome,
     sortOrder: c.sortOrder,
+    parentId: c.parentId ?? null,
+    parentName: c.parent?.name ?? undefined,
+    parentSlug: c.parent?.slug ?? undefined,
   };
 }
 

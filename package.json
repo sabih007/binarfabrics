@@ -13,6 +13,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:categories": "tsx prisma/seed-categories.ts",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
     "app": "npm --prefix apps/mobile start",

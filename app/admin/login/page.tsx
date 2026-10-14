@@ -9,8 +9,8 @@ export default function LoginPage() {
   return (
     <div className="adm-login">
       <div className="adm-login__card">
-        <BrandMark size={42} className="adm-login__mark" title="BinAr Fabrics" />
-        <h1>BinAr Admin</h1>
+        <BrandMark size={42} className="adm-login__mark" title="Bin Ar Fabrics" />
+        <h1>Bin Ar Admin</h1>
         <p className="sub">Sign in to manage products, orders and messages.</p>
         <Suspense fallback={null}>
           <LoginForm />

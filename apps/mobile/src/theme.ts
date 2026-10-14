@@ -1,5 +1,5 @@
 /* ==========================================================================
-   BinAr Fabrics — design tokens.
+   Bin Ar Fabrics — design tokens.
 
    Mirrors the brand palette in the website's `app/globals.css`. The store is
    deliberately a single light, editorial theme on every platform: a fabric

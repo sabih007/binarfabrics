@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { ApiError, apiGet, apiSend } from "@/lib/client";
+import { sortIntoTree } from "@/lib/category-tree";
 import { PATTERNS } from "@/lib/validation";
 import type { ApiCategory } from "@/lib/serialize";
 import Swatch from "@/components/Swatch";
@@ -32,6 +33,14 @@ function parseColors(input: string): string[] {
 
 export default function CategoriesClient({ initial }: { initial: ApiCategory[] }) {
   const [categories, setCategories] = useState(initial);
+  // Parents first, each followed by its own subcategories.
+  const ordered = useMemo(() => sortIntoTree(categories), [categories]);
+  const parents = useMemo(
+    () => categories.filter((c) => !c.parentId).sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)),
+    [categories]
+  );
+  const groupCount = parents.length;
+  const childCount = categories.length - groupCount;
   const [editing, setEditing] = useState<ApiCategory | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +84,11 @@ export default function CategoriesClient({ initial }: { initial: ApiCategory[] }
       <div className="adm__head">
         <div>
           <h1>Categories</h1>
-          <p>{categories.length} categories · these drive the shop filters and homepage tiles.</p>
+          <p>
+            {groupCount} main categor{groupCount === 1 ? "y" : "ies"} · {childCount} subcategor
+            {childCount === 1 ? "y" : "ies"} · these drive the shop filters, the nav menu and the
+            homepage tiles.
+          </p>
         </div>
         <div className="adm-actions">
           <button
@@ -102,6 +115,7 @@ export default function CategoriesClient({ initial }: { initial: ApiCategory[] }
               <thead>
                 <tr>
                   <th>Category</th>
+                  <th>Under</th>
                   <th>Artwork</th>
                   <th className="num">Products</th>
                   <th>Status</th>
@@ -110,15 +124,19 @@ export default function CategoriesClient({ initial }: { initial: ApiCategory[] }
                 </tr>
               </thead>
               <tbody>
-                {categories.map((c) => (
+                {ordered.map((c) => (
                   <tr key={c.id}>
-                    <td>
-                      <div style={{ fontWeight: 600 }}>{c.name}</div>
+                    <td style={c.parentId ? { paddingLeft: 32 } : undefined}>
+                      <div style={{ fontWeight: c.parentId ? 500 : 600 }}>
+                        {c.parentId && <span className="adm-table__muted" style={{ marginRight: 6 }}>↳</span>}
+                        {c.name}
+                      </div>
                       <div className="adm-table__muted">
                         /{c.slug}
                         {c.sub ? ` · ${c.sub}` : ""}
                       </div>
                     </td>
+                    <td className="adm-table__muted">{c.parentName ?? "—"}</td>
                     <td>
                       <div style={{ width: 52 }}>
                         <Swatch pattern={c.pattern} colors={c.colors} image={c.image} alt="" />
@@ -168,6 +186,7 @@ export default function CategoriesClient({ initial }: { initial: ApiCategory[] }
       {formOpen && (
         <CategoryForm
           category={editing}
+          parents={parents}
           onClose={() => setFormOpen(false)}
           onSaved={async (message) => {
             setFormOpen(false);
@@ -183,18 +202,25 @@ export default function CategoriesClient({ initial }: { initial: ApiCategory[] }
 
 function CategoryForm({
   category,
+  parents,
   onClose,
   onSaved,
 }: {
   category: ApiCategory | null;
+  parents: ApiCategory[];
   onClose: () => void;
   onSaved: (message: string) => void | Promise<void>;
 }) {
   const isEdit = Boolean(category);
 
+  // A group that already has subcategories can't itself be nested, and nothing
+  // may be its own parent.
+  const parentOptions = parents.filter((p) => p.id !== category?.id);
+
   const [name, setName] = useState(category?.name ?? "");
   const [slug, setSlug] = useState(category?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(isEdit);
+  const [parentId, setParentId] = useState(category?.parentId ?? "");
   const [pattern, setPattern] = useState<Pattern>(category?.pattern ?? "floral");
   const [colorsText, setColorsText] = useState((category?.colors ?? []).join(", "));
   const [image, setImage] = useState(category?.image ?? "");
@@ -223,6 +249,7 @@ function CategoryForm({
       sortOrder: Number(form.get("sortOrder") ?? 0),
       active: form.get("active") === "on",
       showOnHome: form.get("showOnHome") === "on",
+      parentId,
     };
 
     try {
@@ -297,6 +324,24 @@ function CategoryForm({
             </div>
 
             <div className="adm-grid">
+              <div className={fieldClass("parentId")}>
+                <label htmlFor="c-parent">Main category</label>
+                <select id="c-parent" value={parentId} onChange={(e) => setParentId(e.target.value)}>
+                  <option value="">Top level (a main category)</option>
+                  {parentOptions.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                <span className="adm-field__hint">
+                  {parentId
+                    ? "Shows as a subcategory in the nav menu."
+                    : "Shows as a main category; other categories can sit under it."}
+                </span>
+                <FieldError name="parentId" />
+              </div>
+
               <div className={fieldClass("sub")}>
                 <label htmlFor="c-sub">Subtitle</label>
                 <input

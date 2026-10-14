@@ -4,7 +4,7 @@ import CheckoutForm from "./CheckoutForm";
 
 export const metadata: Metadata = {
   title: "Checkout",
-  description: "Complete your BinAr Fabrics order — cash on delivery nationwide, free delivery over PKR 3,000.",
+  description: "Complete your Bin Ar Fabrics order — cash on delivery nationwide, free delivery over PKR 3,000.",
   robots: { index: false, follow: false },
 };
 

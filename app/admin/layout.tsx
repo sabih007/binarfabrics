@@ -4,7 +4,7 @@ import AdminNav from "@/components/admin/AdminNav";
 import "./admin.css";
 
 export const metadata: Metadata = {
-  title: { default: "Admin", template: "%s — BinAr Admin" },
+  title: { default: "Admin", template: "%s — Bin Ar Admin" },
   // Keep the dashboard out of search results.
   robots: { index: false, follow: false },
 };

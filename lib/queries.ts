@@ -119,16 +119,54 @@ export async function getRelated(product: ApiProduct, take = 4): Promise<ApiProd
     .map(toApiProduct);
 }
 
-export async function listCategories(opts: { includeInactive?: boolean; homeOnly?: boolean } = {}) {
+export async function listCategories(
+  opts: {
+    includeInactive?: boolean;
+    homeOnly?: boolean;
+    /** Only groups, no subcategories. */
+    topLevelOnly?: boolean;
+    /** Subcategories of one group, by its slug. */
+    parentSlug?: string;
+  } = {}
+) {
   const rows = await prisma.category.findMany({
     where: {
       ...(opts.includeInactive ? {} : { active: true }),
       ...(opts.homeOnly ? { showOnHome: true } : {}),
+      ...(opts.topLevelOnly ? { parentId: null } : {}),
+      ...(opts.parentSlug ? { parent: { slug: opts.parentSlug } } : {}),
     },
-    include: { _count: { select: { products: true } } },
+    include: { _count: { select: { products: true } }, parent: true },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
   return rows.map(toApiCategory);
+}
+
+/**
+ * The navigation tree: active top-level groups, each with its subcategories
+ * in admin order. One query, grouped in memory.
+ */
+export async function listCategoryTree(): Promise<(ApiCategory & { children: ApiCategory[] })[]> {
+  const rows = await prisma.category.findMany({
+    where: { active: true },
+    include: { _count: { select: { products: true } }, parent: true },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+  });
+
+  const children = new Map<string, ApiCategory[]>();
+  const roots: ApiCategory[] = [];
+
+  for (const row of rows) {
+    const c = toApiCategory(row);
+    if (!c.parentId) {
+      roots.push(c);
+      continue;
+    }
+    const bucket = children.get(c.parentId);
+    bucket ? bucket.push(c) : children.set(c.parentId, [c]);
+  }
+
+  return roots.map((r) => ({ ...r, children: children.get(r.id) ?? [] }));
 }
 
 /**

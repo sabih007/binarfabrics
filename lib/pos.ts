@@ -7,7 +7,7 @@
 
 /** Printed at the top of every receipt. Override per-shop in .env. */
 export const STORE = {
-  name: process.env.NEXT_PUBLIC_STORE_NAME || "BinAr Fabrics",
+  name: process.env.NEXT_PUBLIC_STORE_NAME || "Bin Ar Fabrics",
   address: process.env.NEXT_PUBLIC_STORE_ADDRESS || "",
   phone: process.env.NEXT_PUBLIC_STORE_PHONE || "",
   /** Sales-tax registration number, if the shop has one. */

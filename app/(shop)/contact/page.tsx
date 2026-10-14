@@ -5,7 +5,7 @@ import ContactForm from "./ContactForm";
 
 export const metadata: Metadata = {
   title: "Contact Us",
-  description: "Get in touch with BinAr Fabrics — order help, exchanges, wholesale enquiries and FAQs.",
+  description: "Get in touch with Bin Ar Fabrics — order help, exchanges, wholesale enquiries and FAQs.",
 };
 
 const FAQS: [string, string][] = [

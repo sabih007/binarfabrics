@@ -103,7 +103,7 @@ export default function AdminNav({ name }: { name: string }) {
         </button>
         <Link className="adm__brand adm__brand--sm" href="/admin">
           <BrandMark size={22} />
-          BinAr<span>Admin</span>
+          Bin Ar<span>Admin</span>
         </Link>
       </div>
 
@@ -113,7 +113,7 @@ export default function AdminNav({ name }: { name: string }) {
         <div className="adm__side-head">
           <Link className="adm__brand" href="/admin">
             <BrandMark size={27} />
-            BinAr<span>Admin</span>
+            Bin Ar<span>Admin</span>
           </Link>
           <button className="adm__burger adm__burger--close" onClick={() => setOpen(false)} aria-label="Close menu">
             <CloseIcon width={19} height={19} />

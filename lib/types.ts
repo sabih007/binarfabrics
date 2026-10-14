@@ -50,6 +50,10 @@ export interface Category {
   active: boolean;
   showOnHome: boolean;
   sortOrder: number;
+  /** Null for a top-level category; otherwise the group it sits under. */
+  parentId: string | null;
+  parentName?: string;
+  parentSlug?: string;
 }
 
 // -------------------------------------------------------- API response shapes

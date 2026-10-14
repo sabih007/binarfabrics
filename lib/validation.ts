@@ -186,6 +186,12 @@ const categoryFields = z.object({
   sortOrder: z.coerce.number().int().default(0),
   active: z.boolean().default(true),
   showOnHome: z.boolean().default(true),
+  /** Empty string from the form's "Top level" option means no parent. */
+  parentId: z
+    .string()
+    .trim()
+    .transform((v) => (v === "" ? null : v))
+    .nullish(),
 });
 
 export const categoryCreateSchema = categoryFields;

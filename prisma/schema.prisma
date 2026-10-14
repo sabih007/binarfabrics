@@ -1,5 +1,5 @@
 // ===========================================================================
-// BinAr Fabrics — database schema
+// Bin Ar Fabrics — database schema
 // Postgres (Supabase / Neon / any Postgres). Run `npm run db:push` after edits.
 // ===========================================================================
 
@@ -27,11 +27,17 @@ model Category {
   sortOrder Int       @default(0)
   active    Boolean   @default(true)
   showOnHome Boolean  @default(true)
+  /// One level of nesting: a top-level group (Women, Fabric, ...) or a child
+  /// of one. Children drive the nav drop-downs, not the homepage tiles.
+  parentId  String?
+  parent    Category? @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Category[] @relation("CategoryTree")
   products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
   @@index([active, sortOrder])
+  @@index([parentId, sortOrder])
 }
 
 model Product {

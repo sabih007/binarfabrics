@@ -1,6 +1,6 @@
-# BinAr Fabrics — mobile app
+# Bin Ar Fabrics — mobile app
 
-The iOS and Android storefront for BinAr Fabrics, built with Expo (SDK 57) and
+The iOS and Android storefront for Bin Ar Fabrics, built with Expo (SDK 57) and
 Expo Router.
 
 ## It shares the website's database

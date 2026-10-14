@@ -1,6 +1,6 @@
-# BinAr Fabrics — Next.js Website
+# Bin Ar Fabrics — Next.js Website
 
-A clean, fast e-commerce site for BinAr Fabrics built with **Next.js (App Router) + TypeScript**.
+A clean, fast e-commerce site for Bin Ar Fabrics built with **Next.js (App Router) + TypeScript**.
 Inspired by the layouts of leading Pakistani fashion brands: clear categories, big imagery,
 PKR pricing, cash-on-delivery messaging, and a slide-out bag.
 
