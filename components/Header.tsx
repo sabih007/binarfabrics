@@ -30,10 +30,10 @@ export interface NavPromos {
  */
 export function Logo({ align = "center" }: { align?: "center" | "start" }) {
   return (
-    <Link className="logo" href="/" aria-label="Bin Ar Fabrics home" style={align === "start" ? { justifyContent: "flex-start" } : undefined}>
+    <Link className="logo" href="/" aria-label="BIN AR FABRICS home" style={align === "start" ? { justifyContent: "flex-start" } : undefined}>
       <BrandMark size={36} className="logo__mark" />
       <span className="logo__text">
-        <span className="logo__name">Bin <span>Ar</span></span>
+        <span className="logo__name">BIN <span>AR</span></span>
         <span className="logo__tag">Fabrics</span>
       </span>
     </Link>
@@ -165,7 +165,7 @@ function MobileNav() {
         <div className="mobile-nav__head">
           <span className="mobile-nav__brand">
             <BrandMark size={28} />
-            <span className="logo__name">Bin <span style={{ color: "var(--brand-green)" }}>Ar</span></span>
+            <span className="logo__name">BIN <span style={{ color: "var(--brand-green)" }}>AR</span></span>
           </span>
           <button className="icon-btn" onClick={closeMobile} aria-label="Close menu"><CloseIcon /></button>
         </div>

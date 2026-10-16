@@ -1,5 +1,5 @@
 /* ==========================================================================
-   The Bin Ar Fabrics mark — the woven square from the logo.
+   The BIN AR FABRICS mark — the woven square from the logo.
 
    Traced from the supplied artwork (Logoweb.jpeg) rather than shipped as an
    image: the mark is twelve axis-aligned bars on a regular grid, so as SVG

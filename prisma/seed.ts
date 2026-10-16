@@ -131,7 +131,7 @@ async function seedOwner() {
 }
 
 async function main() {
-  console.log("Seeding Bin Ar Fabrics…");
+  console.log("Seeding BIN AR FABRICS…");
   const categoryIds = await seedCategories();
   await seedProducts(categoryIds);
   await seedOwner();

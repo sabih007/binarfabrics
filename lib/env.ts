@@ -30,7 +30,7 @@ export const env = {
   stripeSecret: process.env.STRIPE_SECRET_KEY || "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
   resendKey: process.env.RESEND_API_KEY || "",
-  mailFrom: process.env.MAIL_FROM || "Bin Ar Fabrics <onboarding@resend.dev>",
+  mailFrom: process.env.MAIL_FROM || "BIN AR FABRICS <onboarding@resend.dev>",
   /** Where contact-form notifications are delivered. */
   mailTo: process.env.MAIL_TO || "",
 

@@ -66,11 +66,11 @@ const logo = `${env.siteUrl}/brand/mark.png`;
 const shell = (title: string, body: string) => `
 <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#171614">
   <img src="${logo}" width="40" height="40" alt="" style="display:block;border:0;margin:0 0 12px" />
-  <h1 style="font-size:20px;margin:0 0 4px">Bin Ar Fabrics</h1>
+  <h1 style="font-size:20px;margin:0 0 4px">BIN AR FABRICS</h1>
   <p style="color:#8a8580;margin:0 0 24px;font-size:13px">${esc(title)}</p>
   ${body}
   <hr style="border:0;border-top:1px solid #e8e3dc;margin:28px 0" />
-  <p style="color:#8a8580;font-size:12px">Bin Ar Fabrics &middot; Premium unstitched fabrics from Pakistan</p>
+  <p style="color:#8a8580;font-size:12px">BIN AR FABRICS &middot; Premium unstitched fabrics from Pakistan</p>
 </div>`;
 
 export interface OrderMail {
@@ -152,7 +152,7 @@ export async function sendOrderConfirmation(order: OrderMail) {
 
   return send({
     to: order.email,
-    subject: `Order ${order.number} confirmed - Bin Ar Fabrics`,
+    subject: `Order ${order.number} confirmed - BIN AR FABRICS`,
     html: shell("Order confirmation", body),
   });
 }

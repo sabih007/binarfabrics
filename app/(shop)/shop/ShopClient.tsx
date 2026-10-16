@@ -169,8 +169,8 @@ export default function ShopClient() {
   const heading = useMemo(() => {
     if (f.wish) return { title: "My Wishlist", crumb: "Wishlist", intro: "Products you've saved. Add them to your bag whenever you're ready." };
     if (f.sale) return { title: "Sale", crumb: "Sale", intro: "Selected fabrics at reduced prices — while stock lasts." };
-    if (f.isNew) return { title: "New Arrivals", crumb: "New", intro: "The latest prints and weaves to land at Bin Ar." };
-    if (f.collection.length === 1 && !f.cat.length) return { title: f.collection[0], crumb: f.collection[0], intro: "A curated collection from Bin Ar Fabrics." };
+    if (f.isNew) return { title: "New Arrivals", crumb: "New", intro: "The latest prints and weaves to land at BIN AR." };
+    if (f.collection.length === 1 && !f.cat.length) return { title: f.collection[0], crumb: f.collection[0], intro: "A curated collection from BIN AR FABRICS." };
     if (f.cat.length === 1) {
       const name = facets.categories.find((c) => c.value === f.cat[0])?.label ?? catName(f.cat[0]);
       const t = name + (f.fabric.length === 1 ? " · " + f.fabric[0] : "");
@@ -180,7 +180,7 @@ export default function ShopClient() {
     return { title: "All Products", crumb: "Shop", intro: defaultIntro };
   }, [f, facets.categories]);
 
-  useEffect(() => { document.title = `${heading.title} — Bin Ar Fabrics`; }, [heading.title]);
+  useEffect(() => { document.title = `${heading.title} — BIN AR FABRICS`; }, [heading.title]);
 
   const toggleIn = useCallback((key: "cat" | "fabric" | "collection", value: string) =>
     setF((prev) => ({ ...prev, [key]: prev[key].includes(value) ? prev[key].filter((v) => v !== value) : [...prev[key], value] })), []);

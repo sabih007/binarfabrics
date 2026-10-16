@@ -4,7 +4,7 @@ import ShopClient from "./ShopClient";
 
 export const metadata: Metadata = {
   title: "Shop",
-  description: "Browse all Bin Ar Fabrics unstitched and ready-to-wear products. Filter by category, fabric and price.",
+  description: "Browse all BIN AR FABRICS unstitched and ready-to-wear products. Filter by category, fabric and price.",
 };
 
 export default function ShopPage() {

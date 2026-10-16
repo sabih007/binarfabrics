@@ -24,7 +24,7 @@ export default function Footer() {
         company: String(data.get("company") ?? ""),
       });
       form.reset();
-      showToast("Thanks for subscribing — welcome to Bin Ar!");
+      showToast("Thanks for subscribing — welcome to BIN AR!");
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : "Couldn't subscribe. Please try again.");
     } finally {
@@ -87,7 +87,7 @@ export default function Footer() {
             <div>
               <h4>Company</h4>
               <ul>
-                <li><Link href="/about">About Bin Ar</Link></li>
+                <li><Link href="/about">About BIN AR</Link></li>
                 <li><Link href="/about#values">Our Craft</Link></li>
                 <li><Link href="/contact">Wholesale Enquiries</Link></li>
                 <li><Link href="/contact">Careers</Link></li>
@@ -105,7 +105,7 @@ export default function Footer() {
             </div>
           </div>
           <div className="footer__bottom">
-            <span>© {new Date().getFullYear()} Bin Ar Fabrics. All rights reserved.</span>
+            <span>© {new Date().getFullYear()} BIN AR FABRICS. All rights reserved.</span>
             <div className="payments"><span>COD</span><span>VISA</span><span>MASTERCARD</span><span>JAZZCASH</span><span>EASYPAISA</span></div>
           </div>
         </div>

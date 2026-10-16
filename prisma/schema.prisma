@@ -1,5 +1,5 @@
 // ===========================================================================
-// Bin Ar Fabrics — database schema
+// BIN AR FABRICS — database schema
 // Postgres (Supabase / Neon / any Postgres). Run `npm run db:push` after edits.
 // ===========================================================================
 

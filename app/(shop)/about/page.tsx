@@ -5,7 +5,7 @@ import Swatch from "@/components/Swatch";
 
 export const metadata: Metadata = {
   title: "About Us",
-  description: "The story behind Bin Ar Fabrics — a Pakistani textile brand crafting premium unstitched fabrics with honest pricing.",
+  description: "The story behind BIN AR FABRICS — a Pakistani textile brand crafting premium unstitched fabrics with honest pricing.",
 };
 
 export default async function AboutPage() {
@@ -34,7 +34,7 @@ export default async function AboutPage() {
           <div>
             <span className="eyebrow">Since 2015</span>
             <h2>Fabric that feels as good as it looks</h2>
-            <p>Bin Ar Fabrics began with a simple idea: quality fabric shouldn&apos;t cost a fortune. We work directly with mills in Faisalabad and Karachi to bring you lawn, cotton, linen, chiffon and winter weaves at honest prices — no middlemen, no markups.</p>
+            <p>BIN AR FABRICS began with a simple idea: quality fabric shouldn&apos;t cost a fortune. We work directly with mills in Faisalabad and Karachi to bring you lawn, cotton, linen, chiffon and winter weaves at honest prices — no middlemen, no markups.</p>
             <p>Every print is designed in-house and every batch is checked for colour-fastness and weight before it reaches you. Whether you&apos;re dressing for Eid, a wedding or a Tuesday, we want you to feel comfortable and confident.</p>
             <p>Today we ship to every city in Pakistan, with cash on delivery and a no-fuss 7-day exchange.</p>
             <div style={{ marginTop: 28 }}><Link className="btn btn--primary" href="/shop">Shop the collection</Link></div>
